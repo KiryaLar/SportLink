@@ -1,0 +1,252 @@
+[
+  {
+    "name": "Теннисный корт в Парке Горького",
+    "address": "Москва, ул. Крымский Вал, 9",
+    "latitude": 55.7297,
+    "longitude": 37.6015,
+    "placeType": "PAID",
+    "supportedSports": ["TENNIS"],
+    "priceInfo": "500 руб/час",
+    "description": "Открытые корты с грунтовым покрытием"
+  },
+  {
+    "name": "Футбольное поле 5x5 на Воробьёвых горах",
+    "address": "Москва, Воробьёвская набережная, 8",
+    "latitude": 55.7195,
+    "longitude": 37.5395,
+    "placeType": "PAID",
+    "supportedSports": ["FOOTBALL"],
+    "priceInfo": "3000 руб/час",
+    "description": "Крытое поле с искусственным покрытием, размер 5x5"
+  },
+  {
+    "name": "Баскетбольная площадка в Сокольниках",
+    "address": "Москва, Сокольнический вал, 1",
+    "latitude": 55.7853,
+    "longitude": 37.6805,
+    "placeType": "FREE",
+    "supportedSports": ["BASKETBALL"],
+    "priceInfo": null,
+    "description": "Открытая площадка с хорошим покрытием"
+  },
+  {
+    "name": "Волейбольный пляж в Лужниках",
+    "address": "Москва, Лужнецкая набережная, 8",
+    "latitude": 55.7215,
+    "longitude": 37.5565,
+    "placeType": "FREE",
+    "supportedSports": ["VOLLEYBALL"],
+    "priceInfo": null,
+    "description": "Пляжный волейбол, песок"
+  },
+  {
+    "name": "Теннисный центр «Волынкино»",
+    "address": "Москва, ул. Озерная, 42",
+    "latitude": 55.6975,
+    "longitude": 37.4565,
+    "placeType": "PAID",
+    "supportedSports": ["TENNIS"],
+    "priceInfo": "1500 руб/час",
+    "description": "Крытые корты с профессиональным покрытием"
+  },
+  {
+    "name": "Футбольная площадка 3x3 в Парке Победы",
+    "address": "Москва, пл. Победы, 3",
+    "latitude": 55.7375,
+    "longitude": 37.5095,
+    "placeType": "FREE",
+    "supportedSports": ["FOOTBALL"],
+    "priceInfo": null,
+    "description": "Небольшое поле для мини-футбола"
+  },
+  {
+    "name": "Баскетбольный корт в ВДНХ",
+    "address": "Москва, пр-т Мира, 119",
+    "latitude": 55.8265,
+    "longitude": 37.6375,
+    "placeType": "FREE",
+    "supportedSports": ["BASKETBALL"],
+    "priceInfo": null,
+    "description": "Современная площадка с хорошим покрытием"
+  },
+  {
+    "name": "Ледовый дворец «Крылатское»",
+    "address": "Москва, ул. Крылатские Луга, 2",
+    "latitude": 55.7595,
+    "longitude": 37.4285,
+    "placeType": "PAID",
+    "supportedSports": ["HOCKEY"],
+    "priceInfo": "800 руб/час",
+    "description": "Ледовая арена для хоккея и фигурного катания"
+  },
+  {
+    "name": "Теннисные корты в «Лужниках»",
+    "address": "Москва, ул. Лужники, 24",
+    "latitude": 55.7185,
+    "longitude": 37.5545,
+    "placeType": "PAID",
+    "supportedSports": ["TENNIS"],
+    "priceInfo": "2000 руб/час",
+    "description": "Профессиональные корты с хардовым покрытием"
+  },
+  {
+    "name": "Футбольное поле в Измайловском парке",
+    "address": "Москва, Измайловское шоссе, 73Ж",
+    "latitude": 55.7915,
+    "longitude": 37.7565,
+    "placeType": "FREE",
+    "supportedSports": ["FOOTBALL"],
+    "priceInfo": null,
+    "description": "Поле с натуральным газоном"
+  },
+  {
+    "name": "Волейбольная площадка в Царицыно",
+    "address": "Москва, ул. Дольская, 1",
+    "latitude": 55.6155,
+    "longitude": 37.6815,
+    "placeType": "FREE",
+    "supportedSports": ["VOLLEYBALL"],
+    "priceInfo": null,
+    "description": "Открытая площадка в парке"
+  },
+  {
+    "name": "Баскетбольная площадка в Парке 850-летия Москвы",
+    "address": "Москва, ул. Перерва, 56",
+    "latitude": 55.6595,
+    "longitude": 37.7165,
+    "placeType": "FREE",
+    "supportedSports": ["BASKETBALL"],
+    "priceInfo": null,
+    "description": "Площадка с новым покрытием"
+  },
+  {
+    "name": "Хоккейная коробка в Сокольниках",
+    "address": "Москва, ул. Сокольнический вал, 1",
+    "latitude": 55.7885,
+    "longitude": 37.6785,
+    "placeType": "FREE",
+    "supportedSports": ["HOCKEY"],
+    "priceInfo": null,
+    "description": "Открытая хоккейная площадка"
+  },
+  {
+    "name": "Теннисный клуб «Метеор»",
+    "address": "Москва, ул. Академика Королёва, 15",
+    "latitude": 55.8295,
+    "longitude": 37.6115,
+    "placeType": "PAID",
+    "supportedSports": ["TENNIS"],
+    "priceInfo": "1200 руб/час",
+    "description": "Клуб с крытыми и открытыми кортами"
+  },
+  {
+    "name": "Футбольная академия «Спартак»",
+    "address": "Москва, Волоколамское шоссе, 69",
+    "latitude": 55.8095,
+    "longitude": 37.4565,
+    "placeType": "PAID",
+    "supportedSports": ["FOOTBALL"],
+    "priceInfo": "4000 руб/час",
+    "description": "Профессиональное поле с трибунами"
+  },
+  {
+    "name": "Волейбольный зал в ЦСКА",
+    "address": "Москва, Хорошёвское шоссе, 38",
+    "latitude": 55.7785,
+    "longitude": 37.5265,
+    "placeType": "PAID",
+    "supportedSports": ["VOLLEYBALL"],
+    "priceInfo": "2500 руб/час",
+    "description": "Крытый зал с профессиональным покрытием"
+  },
+  {
+    "name": "Баскетбольный центр «Тринта»",
+    "address": "Москва, ул. Вятская, 27",
+    "latitude": 55.7965,
+    "longitude": 37.5785,
+    "placeType": "PAID",
+    "supportedSports": ["BASKETBALL"],
+    "priceInfo": "3500 руб/час",
+    "description": "Крытая арена с трибунами"
+  },
+  {
+    "name": "Пляжный волейбол в Серебряном Бору",
+    "address": "Москва, Серебряно-Борский бульвар",
+    "latitude": 55.8015,
+    "longitude": 37.4685,
+    "placeType": "FREE",
+    "supportedSports": ["VOLLEYBALL"],
+    "priceInfo": null,
+    "description": "Пляжные корты на берегу"
+  },
+  {
+    "name": "Теннисный корт в Нескучном саду",
+    "address": "Москва, ул. Крымский Вал, 7",
+    "latitude": 55.7265,
+    "longitude": 37.5985,
+    "placeType": "PAID",
+    "supportedSports": ["TENNIS"],
+    "priceInfo": "800 руб/час",
+    "description": "Уютные корты в парке"
+  },
+  {
+    "name": "Футбольное поле в Фили-Кунцевском парке",
+    "address": "Москва, ул. Большая Филёвская, 22",
+    "latitude": 55.7465,
+    "longitude": 37.4485,
+    "placeType": "FREE",
+    "supportedSports": ["FOOTBALL"],
+    "priceInfo": null,
+    "description": "Поле в живописном парке"
+  },
+  {
+    "name": "Ледовый комплекс «Витязь»",
+    "address": "Москва, ул. Генерала Белова, 1",
+    "latitude": 55.6595,
+    "longitude": 37.6815,
+    "placeType": "PAID",
+    "supportedSports": ["HOCKEY"],
+    "priceInfo": "1000 руб/час",
+    "description": "Современный ледовый дворец"
+  },
+  {
+    "name": "Баскетбольная площадка в Парке Горького",
+    "address": "Москва, ул. Крымский Вал, 9",
+    "latitude": 55.7285,
+    "longitude": 37.6025,
+    "placeType": "FREE",
+    "supportedSports": ["BASKETBALL"],
+    "priceInfo": null,
+    "description": "Площадка streetball в центре парка"
+  },
+  {
+    "name": "Волейбольное поле в Кузьминках",
+    "address": "Москва, Кузьминский парк, 1",
+    "latitude": 55.7015,
+    "longitude": 37.7365,
+    "placeType": "FREE",
+    "supportedSports": ["VOLLEYBALL"],
+    "priceInfo": null,
+    "description": "Открытая площадка в парке"
+  },
+  {
+    "name": "Теннисный центр «Панорама»",
+    "address": "Москва, ул. Дыбенко, 26",
+    "latitude": 55.7485,
+    "longitude": 37.7865,
+    "placeType": "PAID",
+    "supportedSports": ["TENNIS"],
+    "priceInfo": "1800 руб/час",
+    "description": "Современный центр с крытыми кортами"
+  },
+  {
+    "name": "Футбольная площадка 5x5 в Перово",
+    "address": "Москва, ул. Перовская, 56",
+    "latitude": 55.7595,
+    "longitude": 37.7565,
+    "placeType": "PAID",
+    "supportedSports": ["FOOTBALL"],
+    "priceInfo": "2500 руб/час",
+    "description": "Крытое поле с искусственным газоном"
+  }
+]

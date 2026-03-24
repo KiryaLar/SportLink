@@ -1,0 +1,167 @@
+{
+  "realm": "sportlink",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "verifyEmail": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Regular user role",
+        "composite": false
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrator role",
+        "composite": false
+      }
+    ],
+    "client": {
+      "realm-management": [
+        {
+          "name": "realm-admin",
+          "description": "Realm Administrator",
+          "composite": true,
+          "composites": {
+            "client": {
+              "realm-management": ["manage-realm", "view-realm", "manage-users", "view-users"]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "defaultRoles": ["USER"],
+  "clients": [
+    {
+      "clientId": "gateway-service",
+      "name": "Gateway Service",
+      "enabled": true,
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "profile-service",
+      "name": "Profile Service",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false
+    },
+    {
+      "clientId": "matches-service",
+      "name": "Matches Service",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false
+    },
+    {
+      "clientId": "rating-service",
+      "name": "Rating Service",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false
+    },
+    {
+      "clientId": "sports-places-service",
+      "name": "Sports Places Service",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false
+    },
+    {
+      "clientId": "messaging-service",
+      "name": "Messaging Service",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false
+    },
+    {
+      "clientId": "notification-service",
+      "name": "Notification Service",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@sportlink.ru",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN", "USER"]
+    },
+    {
+      "username": "user1",
+      "email": "user1@sportlink.ru",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Иван",
+      "lastName": "Иванов",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER"]
+    },
+    {
+      "username": "user2",
+      "email": "user2@sportlink.ru",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Петр",
+      "lastName": "Петров",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER"]
+    }
+  ]
+}

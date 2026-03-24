@@ -1,0 +1,406 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: sportlink
+      POSTGRES_PASSWORD: sportlink
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${PSTGRS_USER:-sportlink} -d $${PSTGRS_DB:-postgres} -h localhost -p 5432 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    networks:
+      sportlink_network:
+
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      sportlink_network:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: sportlink
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    networks:
+      sportlink_network:
+
+  # TODO: Don't forget about configured security settings
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    command: start-dev --import-realm
+    ports:
+      - "${KEYCLOAK_PORT:-8443}:8080"
+      - "${KEYCLOAK_HEALTH_PORT:-9000}:9000"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: sportlink
+      KC_DB_PASSWORD: sportlink
+      KC_METRICS_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./infra/keycloak/sportlink-realm.json:/opt/keycloak/data/import/realm.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9000/health/ready || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      sportlink_network:
+
+  # ===========================================
+  # Микросервисы
+  # ===========================================
+
+  gateway-service:
+    build:
+      context: .
+      dockerfile: services/gateway-service/Dockerfile
+    container_name: gateway-service
+    ports:
+      - "${GATEWAY_PORT}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - GATEWAY_PORT=8080
+      - PROFILE_SERVICE_URL=http://profile-service:8081
+      - MATCHES_SERVICE_URL=http://matches-service:8082
+      - RATING_SERVICE_URL=http://rating-service:8083
+      - SPORTS_PLACES_SERVICE_URL=http://sports-places-service:8084
+      - MESSAGING_SERVICE_URL=http://messaging-service:8085
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8086
+      - FRONT_URL=${FRONT_URL:-http://localhost:3000}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KEYCLOAK_ADMIN_SERVER_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=sportlink
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      sportlink_network:
+    restart: unless-stopped
+
+  profile-service:
+    build:
+      context: .
+      dockerfile: services/profile-service/Dockerfile
+    container_name: profile-service
+    ports:
+      - "${PROFILES_PORT}:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - PROFILES_PORT=8081
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/profiles
+      - SPRING_DATASOURCE_USERNAME=sportlink
+      - SPRING_DATASOURCE_PASSWORD=sportlink
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/sportlink
+      - MINIO_URL=http://minio:9000
+      - MINIO_BUCKET=profiles
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadminsecret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      sportlink_network:
+    restart: unless-stopped
+
+  matches-service:
+    build:
+      context: .
+      dockerfile: services/matches-service/Dockerfile
+    container_name: matches-service
+    ports:
+      - "${MATCHES_SERVICE_PORT}:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MATCHES_SERVICE_PORT=8082
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sportlink_matches
+      - SPRING_DATASOURCE_USERNAME=sportlink
+      - SPRING_DATASOURCE_PASSWORD=sportlink
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/sportlink
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      sportlink_network:
+    restart: unless-stopped
+
+  rating-service:
+    build:
+      context: .
+      dockerfile: services/rating-service/Dockerfile
+    container_name: rating-service
+    ports:
+      - "${RATING_SERVICE_PORT}:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - RATING_SERVICE_PORT=8083
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sportlink_ratings
+      - SPRING_DATASOURCE_USERNAME=sportlink
+      - SPRING_DATASOURCE_PASSWORD=sportlink
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/sportlink
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      sportlink_network:
+    restart: unless-stopped
+
+  sports-places-service:
+    build:
+      context: .
+      dockerfile: services/sports-places-service/Dockerfile
+    container_name: sports-places-service
+    ports:
+      - "${SPORTS_PLACES_SERVICE_PORT}:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPORTS_PLACES_SERVICE_PORT=8084
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sportlink_places
+      - SPRING_DATASOURCE_USERNAME=sportlink
+      - SPRING_DATASOURCE_PASSWORD=sportlink
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/sportlink
+      - SEED_DATA_ENABLED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      sportlink_network:
+    restart: unless-stopped
+
+  messaging-service:
+    build:
+      context: .
+      dockerfile: services/messaging-service/Dockerfile
+    container_name: messaging-service
+    ports:
+      - "${MESSAGING_SERVICE_PORT}:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MESSAGING_SERVICE_PORT=8085
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sportlink_messages
+      - SPRING_DATASOURCE_USERNAME=sportlink
+      - SPRING_DATASOURCE_PASSWORD=sportlink
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/sportlink
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      sportlink_network:
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: notification-service
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT}:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NOTIFICATION_SERVICE_PORT=8086
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sportlink_notifications
+      - SPRING_DATASOURCE_USERNAME=sportlink
+      - SPRING_DATASOURCE_PASSWORD=sportlink
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/sportlink
+      - SPRING_MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-587}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      sportlink_network:
+    restart: unless-stopped
+
+        
+#  profile-service:
+#    image: profile-service:latest
+#    container_name: profile-service
+#    ports:
+#      - "${PROFILES_PORT}:8081"
+#      - "5006:5005"
+#    build:
+#      context: ./services
+#      dockerfile: profile-service/Dockerfile
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      POSTGRES_HOST: sportlink
+#      POSTGRES_PORT: 5432
+#      POSTGRES_DB: ${PROFILES_POSTGRES_DB}
+#      POSTGRES_USER: ${PROFILES_POSTGRES_USER}
+#      POSTGRES_PASSWORD: ${PROFILES_POSTGRES_PASSWORD}
+#      KEYCLOAK_ISSUER_URI: http://keycloak:8081/realms/sportlink
+##      CONSUL_HOST: consul
+##      CONSUL_PORT: 8500
+#      MINIO_HOST: minio
+#      MINIO_PORT: ${MINIO_API_PORT:-9001}
+#      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+#    depends_on:
+##      consul:
+##        condition: service_healthy
+#      postgres:
+#        condition: service_healthy
+#      minio:
+#        condition: service_healthy
+##      minio-init:
+##        condition: service_completed_successfully
+#    networks:
+#      sportlink_network:
+        
+#  minio:
+#    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
+#    container_name: minio
+#    ports:
+#      - "${MINIO_API_PORT}:9000"
+#      - "${MINIO_CONSOLE_PORT}:9001"
+#    environment:
+#      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+#      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+#    command: server /data --console-address ":9001"
+#    volumes:
+#      - minio_data:/data
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+#      interval: ${HEALTHCHECK_INTERVAL}
+#      retries: ${HEALTHCHECK_RETRIES}
+    
+  # не работало без выполнения команды локально: sed -i 's/\r$//' ./infra/minio/init-minio.sh
+#  minio-init:
+#    image: minio/mc:latest
+#    container_name: minio-init
+#    depends_on:
+#      minio:
+#        condition: service_healthy
+#    environment:
+#      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+#      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+#      PROFILES_BUCKET: ${PROFILES_BUCKET:-profiles}
+#      PROJECT_SERVICE_USER: ${PROFILE_SERVICE_USER:-profile-service}
+#      PROJECT_SERVICE_SECRET: ${PROFILE_SERVICE_SECRET:-profile-service-secret}
+#    volumes:
+#      - ./infra/minio/init-minio.sh:/init-minio.sh:ro
+#      - ./infra/minio/policies:/policies:ro
+#      - ./infra/minio/seed:/seed:ro
+#    entrypoint: /bin/sh /init-minio.sh
+#    restart: "no"
+
+networks:
+  sportlink_network:
+    driver: bridge
+
+volumes:
+    postgres_data:
+    minio_data:

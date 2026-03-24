@@ -9,4 +9,3 @@ class GatewayServiceApplication
 fun main(args: Array<String>) {
     runApplication<GatewayServiceApplication>(*args)
 }
-

@@ -1,24 +1,24 @@
 rootProject.name = "SportLink"
 
+pluginManagement {
+    includeBuild("build-logic")
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 include(
-    "services:user-service",
+    "keycloak-event-listener",
+    "services:profile-service",
     "services:matches-service",
-    "services:area-service",
+    "services:sports-places-service",
     "services:gateway-service",
     "services:messaging-service",
     "services:notification-service",
     "services:rating-service",
     "common:core"
 )
-
-rootProject.name = "SportLink"
-
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

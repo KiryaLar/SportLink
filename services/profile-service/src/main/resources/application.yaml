@@ -1,0 +1,53 @@
+server:
+  port: ${PROFILES_PORT:8081}
+
+spring:
+  application:
+    name: profile-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/profiles
+    username: sportlink
+    password: sportlink
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: profile-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8443/realms/sportlink
+
+storage:
+  baseUrl: http://localhost:9000/avatars
+
+minio:
+  url: http://${MINIO_HOST:localhost}:${MINIO_PORT:9000}
+  bucket: profiles
+  region: eu-central-1
+  access-key: ${PROFILES_ACCESS_KEY:profile-service}
+  secret-key: ${PROFILES_SECRET_KEY:profile-service-secret}
+
+logging:
+  level:
+    ru.larkin.profileservice: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

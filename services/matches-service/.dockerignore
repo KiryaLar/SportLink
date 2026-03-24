@@ -1,0 +1,13 @@
+build/
+.gradle/
+.idea/
+*.iml
+out/
+target/
+.git/
+.gitignore
+.env
+*.md
+!gradle/
+!src/
+!build.gradle.kts
