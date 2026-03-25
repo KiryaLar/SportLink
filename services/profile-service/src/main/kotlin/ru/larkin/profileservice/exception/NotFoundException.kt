@@ -27,5 +27,9 @@ class NotFoundException: ProfileServiceException {
         fun complainNotFound(complainId: Long, cause: Throwable): NotFoundException {
             return NotFoundException("Complain with id $complainId not found", cause)
         }
+
+        fun contactNotFound(contactId: Long): NotFoundException {
+            return NotFoundException("Contact with id $contactId not found")
+        }
     }
 }

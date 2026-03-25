@@ -10,6 +10,10 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import ru.larkin.gatewayservice.dto.req.LoginRequest
+import ru.larkin.gatewayservice.dto.req.RegisterRequest
+import ru.larkin.gatewayservice.dto.resp.LoginResponse
+import ru.larkin.gatewayservice.dto.resp.RegisterResponse
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -38,38 +42,3 @@ class AuthController(
         ))
     }
 }
-
-data class RegisterRequest(
-    @field:NotBlank(message = "Email не может быть пустым")
-    @field:Email(message = "Некорректный email")
-    val email: String,
-
-    @field:NotBlank(message = "Пароль не может быть пустым")
-    @field:Size(min = 8, message = "Пароль должен содержать минимум 8 символов")
-    val password: String,
-
-    @field:NotBlank(message = "Имя не может быть пустым")
-    val name: String,
-
-    val phone: String? = null
-)
-
-data class RegisterResponse(
-    val userId: String,
-    val message: String
-)
-
-data class LoginRequest(
-    @field:NotBlank(message = "Email не может быть пустым")
-    @field:Email(message = "Некорректный email")
-    val email: String,
-
-    @field:NotBlank(message = "Пароль не может быть пустым")
-    val password: String
-)
-
-data class LoginResponse(
-    val accessToken: String,
-    val refreshToken: String,
-    val expiresIn: Long
-)

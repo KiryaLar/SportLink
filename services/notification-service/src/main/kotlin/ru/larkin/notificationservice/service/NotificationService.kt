@@ -5,11 +5,11 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.larkin.common.events.NotificationEvent
-import ru.larkin.common.events.NotificationType
 import ru.larkin.notificationservice.dto.resp.NotificationCountResponse
 import ru.larkin.notificationservice.dto.resp.NotificationResponse
 import ru.larkin.notificationservice.entity.Notification
 import ru.larkin.notificationservice.entity.NotificationStatus
+import ru.larkin.notificationservice.entity.NotificationType
 import ru.larkin.notificationservice.exception.NotFoundException
 import ru.larkin.notificationservice.repository.NotificationRepository
 import java.util.UUID
@@ -180,7 +180,7 @@ class NotificationService(
     fun saveNotification(event: NotificationEvent) {
         createNotification(
             userId = event.userId,
-            type = event.type,
+            type = event.type.toEntityNotificationType(),
             title = event.title,
             message = event.message,
             entityId = event.relatedEntityId?.toLongOrNull(),
@@ -201,4 +201,20 @@ private fun Notification.toNotificationResponse(): NotificationResponse {
         status = status,
         createdAt = createdAt
     )
+}
+
+private fun ru.larkin.common.events.NotificationType.toEntityNotificationType(): NotificationType {
+    return when (this) {
+        ru.larkin.common.events.NotificationType.MATCH_INVITE -> NotificationType.MATCH_INVITE
+        ru.larkin.common.events.NotificationType.MATCH_JOINED -> NotificationType.MATCH_JOINED
+        ru.larkin.common.events.NotificationType.MATCH_CANCELLED -> NotificationType.MATCH_CANCELLED
+        ru.larkin.common.events.NotificationType.MATCH_STARTED -> NotificationType.MATCH_STARTED
+        ru.larkin.common.events.NotificationType.MATCH_FINISHED -> NotificationType.MATCH_FINISHED
+        ru.larkin.common.events.NotificationType.REVIEW_RECEIVED -> NotificationType.REVIEW_RECEIVED
+        ru.larkin.common.events.NotificationType.NEW_MESSAGE -> NotificationType.NEW_MESSAGE
+        ru.larkin.common.events.NotificationType.CONTACT_REQUEST -> NotificationType.CONTACT_REQUEST
+        ru.larkin.common.events.NotificationType.CONTACT_ACCEPTED -> NotificationType.CONTACT_ACCEPTED
+        ru.larkin.common.events.NotificationType.SYSTEM -> NotificationType.SYSTEM
+        ru.larkin.common.events.NotificationType.MATCH_UPDATE -> NotificationType.MATCH_UPDATE
+    }
 }

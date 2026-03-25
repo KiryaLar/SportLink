@@ -5,16 +5,18 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.client.RestTemplate
-import java.net.InetAddress
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.body
+import ru.larkin.gatewayservice.dto.resp.KeycloakTokenResponse
+import ru.larkin.gatewayservice.dto.resp.TokenResponse
+import ru.larkin.gatewayservice.exception.KeycloakAdminException
+import ru.larkin.gatewayservice.exception.KeycloakAuthenticationException
+import ru.larkin.gatewayservice.exception.KeycloakCreationException
+import ru.larkin.gatewayservice.exception.UserAlreadyExistsException
 
 @Service
 class KeycloakAdminService(
-    @Value("\${keycloak.admin-server-url}")
-    private val adminServerUrl: String,
 
     @Value("\${keycloak.realm}")
     private val realm: String,
@@ -23,22 +25,16 @@ class KeycloakAdminService(
     private val adminUsername: String,
 
     @Value("\${keycloak.admin-password}")
-    private val adminPassword: String
+    private val adminPassword: String,
+
+    private val restClient: RestClient
 ) {
 
     private val log = LoggerFactory.getLogger(KeycloakAdminService::class.java)
 
-    private val restTemplate: RestTemplate = RestTemplate(
-        SimpleClientHttpRequestFactory().apply {
-            setConnectTimeout(5000)
-            setReadTimeout(5000)
-        }
-    )
-
     /**
      * Создаёт пользователя в Keycloak через Admin REST API
      */
-    @Transactional
     fun createUser(
         email: String,
         password: String,
@@ -49,16 +45,13 @@ class KeycloakAdminService(
 
         val token = getAdminToken()
 
-        // Проверяем, существует ли уже пользователь
         val existingUser = findUserByEmail(email, token)
         if (existingUser != null) {
             throw UserAlreadyExistsException("Пользователь с email $email уже существует")
         }
 
-        // Создаём пользователя
         val userId = createKeycloakUser(email, name, phone, token)
 
-        // Устанавливаем пароль
         setPassword(userId, password, token)
 
         log.info("User created successfully in Keycloak: userId={}", userId)
@@ -72,7 +65,7 @@ class KeycloakAdminService(
     fun login(email: String, password: String): TokenResponse {
         log.info("Logging in user: email={}", email)
 
-        val tokenUrl = "$adminServerUrl/realms/$realm/protocol/openid-connect/token"
+        val tokenUrl = "/realms/$realm/protocol/openid-connect/token"
 
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_FORM_URLENCODED
@@ -83,14 +76,14 @@ class KeycloakAdminService(
                 "&username=$email" +
                 "&password=$password"
 
-        val request = HttpEntity(body, headers)
-
         try {
-            val response = restTemplate.postForObject(
-                tokenUrl,
-                request,
-                KeycloakTokenResponse::class.java
-            ) ?: throw KeycloakAuthenticationException("Ошибка получения токенов")
+            val response = restClient.post()
+                .uri(tokenUrl)
+                .headers { it.addAll(headers) }
+                .body(body)
+                .retrieve()
+                .body<KeycloakTokenResponse>()
+                ?: throw KeycloakAuthenticationException("Ошибка получения токенов")
 
             return TokenResponse(
                 accessToken = response.accessToken,
@@ -107,24 +100,20 @@ class KeycloakAdminService(
      * Получение admin access token
      */
     private fun getAdminToken(): String {
-        val tokenUrl = "$adminServerUrl/realms/master/protocol/openid-connect/token"
-
-        val headers = HttpHeaders().apply {
-            contentType = MediaType.APPLICATION_FORM_URLENCODED
-        }
+        val tokenUrl = "/realms/master/protocol/openid-connect/token"
 
         val body = "grant_type=password" +
                 "&client_id=admin-cli" +
                 "&username=$adminUsername" +
                 "&password=$adminPassword"
 
-        val request = HttpEntity(body, headers)
-
-        val response = restTemplate.postForObject(
-            tokenUrl,
-            request,
-            KeycloakTokenResponse::class.java
-        ) ?: throw KeycloakAdminException("Не удалось получить admin token")
+        var response = (restClient.post()
+            .uri(tokenUrl)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(body)
+            .retrieve()
+            .body<KeycloakTokenResponse>()
+            ?: throw KeycloakAdminException("Не удалось получить admin token"))
 
         return response.accessToken
     }
@@ -133,7 +122,7 @@ class KeycloakAdminService(
      * Поиск пользователя по email
      */
     private fun findUserByEmail(email: String, token: String): String? {
-        val url = "$adminServerUrl/admin/realms/$realm/users?email=$email&exact=true"
+        val url = "/admin/realms/$realm/users?email=$email&exact=true"
 
         val headers = HttpHeaders().apply {
             set("Authorization", "Bearer $token")
@@ -142,14 +131,13 @@ class KeycloakAdminService(
         val request = HttpEntity<String>(headers)
 
         try {
-            val response = restTemplate.exchange(
-                url,
-                org.springframework.http.HttpMethod.GET,
-                request,
-                Array<UserRepresentation>::class.java
-            )
+            var response = restClient.get()
+                .uri(url)
+                .headers { it.addAll(headers) }
+                .retrieve()
+                .body<Array<UserRepresentation>>()
 
-            return response.body?.firstOrNull()?.id
+            return response?.firstOrNull()?.id
         } catch (e: Exception) {
             log.warn("Error finding user by email: ${e.message}")
             return null
@@ -165,7 +153,7 @@ class KeycloakAdminService(
         phone: String?,
         token: String
     ): String {
-        val url = "$adminServerUrl/admin/realms/$realm/users"
+        val url = "/admin/realms/$realm/users"
 
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_JSON
@@ -177,23 +165,20 @@ class KeycloakAdminService(
             "email" to email,
             "firstName" to name,
             "enabled" to true,
-            "emailVerified" to false,
+            "emailVerified" to true,
             "attributes" to mapOf(
                 "name" to listOf(name),
                 "phone" to listOfNotNull(phone)
             )
         )
 
-        val request = HttpEntity(body, headers)
+        val response = restClient.post()
+            .uri(url)
+            .headers { it.addAll(headers) }
+            .body(body)
+            .retrieve()
+            .toBodilessEntity()
 
-        val response = restTemplate.exchange(
-            url,
-            org.springframework.http.HttpMethod.POST,
-            request,
-            Void::class.java
-        )
-
-        // Извлекаем ID из Location заголовка
         val location = response.headers.location
             ?: throw KeycloakCreationException("Не удалось получить ID созданного пользователя")
 
@@ -204,7 +189,7 @@ class KeycloakAdminService(
      * Установка пароля пользователю
      */
     private fun setPassword(userId: String, password: String, token: String) {
-        val url = "$adminServerUrl/admin/realms/$realm/users/$userId/reset-password"
+        val url = "/admin/realms/$realm/users/$userId/reset-password"
 
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_JSON
@@ -217,28 +202,12 @@ class KeycloakAdminService(
             "temporary" to false
         )
 
-        val request = HttpEntity(body, headers)
-
-        restTemplate.exchange(
-            url,
-            org.springframework.http.HttpMethod.PUT,
-            request,
-            Void::class.java
-        )
+        restClient.post()
+            .uri(url)
+            .headers { it.addAll(headers) }
+            .body(body)
+            .retrieve()
     }
-}
-
-// DTO для ответов Keycloak
-data class KeycloakTokenResponse(
-    val access_token: String,
-    val refresh_token: String?,
-    val expires_in: Int,
-    val scope: String? = null,
-    val token_type: String? = null
-) {
-    val accessToken: String get() = access_token
-    val refreshToken: String? get() = refresh_token
-    val expiresIn: Int get() = expires_in
 }
 
 data class UserRepresentation(
@@ -250,16 +219,3 @@ data class UserRepresentation(
     val enabled: Boolean,
     val emailVerified: Boolean
 )
-
-// Response DTO
-data class TokenResponse(
-    val accessToken: String,
-    val refreshToken: String,
-    val expiresIn: Long
-)
-
-// Exceptions
-class UserAlreadyExistsException(message: String) : RuntimeException(message)
-class KeycloakCreationException(message: String) : RuntimeException(message)
-class KeycloakAuthenticationException(message: String) : RuntimeException(message)
-class KeycloakAdminException(message: String) : RuntimeException(message)

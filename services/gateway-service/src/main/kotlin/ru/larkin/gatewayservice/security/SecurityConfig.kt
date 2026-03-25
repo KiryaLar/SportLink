@@ -13,8 +13,8 @@ import org.springframework.security.web.server.authorization.ServerAccessDeniedH
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository
 import org.springframework.security.web.server.savedrequest.NoOpServerRequestCache
 import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.CorsConfigurationSource
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import org.springframework.web.cors.reactive.CorsConfigurationSource
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import reactor.core.publisher.Mono
 
 @Configuration
@@ -25,18 +25,22 @@ class SecurityConfig {
     fun securityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
         return http
             .csrf { it.disable() }
-            .cors { }
+//            TODO: CORS - настроить для фронтенда
+            .cors { it.configurationSource(corsConfigurationSource()) }
             .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
             .requestCache { it.requestCache(NoOpServerRequestCache.getInstance()) }
             .authorizeExchange { exchanges ->
                 exchanges
-                    // Auth endpoints - без аутентификации
-                    .pathMatchers("/api/v1/auth/**").permitAll()
-                    // Actuator и документация
-                    .pathMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
-                    // Preflight requests
+                    .pathMatchers(
+                        "/api/v1/auth/**"
+                    ).permitAll()
+                    .pathMatchers(
+                        "/actuator/**",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/api-docs/**"
+                    ).permitAll()
                     .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    // Все остальные API требуют аутентификации
                     .pathMatchers("/api/v1/**").authenticated()
                     .anyExchange().authenticated()
             }

@@ -55,15 +55,7 @@ class UserRating(
 
     fun getSkillLevelMatchPercentage(): Double {
         val total = skillLevelMatches + skillLevelBelow + skillLevelAbove
-        if (total == 0) return 100.0
+        if (total == 0L) return 100.0
         return Math.round((skillLevelMatches.toDouble() / total) * 10000.0) / 100.0
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is UserRating) return false
-        return id != null && id == other.id
-    }
-
-    override fun hashCode(): Int = id?.hashCode() ?: 0
 }

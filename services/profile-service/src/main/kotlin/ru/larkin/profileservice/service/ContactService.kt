@@ -3,16 +3,17 @@ package ru.larkin.profileservice.service
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.larkin.profileservice.dto.req.ContactRequest
-import ru.larkin.profileservice.dto.req.ProfileCreateRequest
-import ru.larkin.profileservice.dto.req.ProfileUpdateRequest
-import ru.larkin.profileservice.dto.resp.*
-import ru.larkin.profileservice.entity.*
+import ru.larkin.profileservice.dto.resp.ContactResponse
+import ru.larkin.profileservice.dto.resp.ContactStatusResponse
+import ru.larkin.profileservice.dto.resp.ProfileSummaryResponse
+import ru.larkin.profileservice.entity.Contact
+import ru.larkin.profileservice.entity.ContactStatus
 import ru.larkin.profileservice.exception.NotFoundException
+import ru.larkin.profileservice.exception.ProfileErrorType
 import ru.larkin.profileservice.exception.ProfileServiceException
 import ru.larkin.profileservice.repository.ContactRepository
 import ru.larkin.profileservice.repository.ProfileRepository
 import ru.larkin.profileservice.storage.service.ImageStorageService
-import ru.larkin.profileservice.utils.toProfileResponse
 import ru.larkin.profileservice.utils.toProfileSummaryResponse
 import java.util.UUID
 
@@ -26,28 +27,27 @@ class ContactService(
     @Transactional(readOnly = true)
     fun getContactsByUserId(userId: UUID): List<ProfileSummaryResponse> {
         val profile = profileRepository.findByKeycloakUserId(userId)
-            ?: throw NotFoundException("Profile not found for user $userId")
+            ?: throw NotFoundException.userNotFound(userId)
 
         return contactRepository.findByOwnerIdAndStatus(profile.id!!, ContactStatus.ACCEPTED)
-            .map { it.contact.toProfileSummaryResponse(imageStorageService::buildPublicUrlByKey) }
+            .map { it.contact.toProfileSummaryResponse(imageStorageService::buildPublicUrlByKey) }        
     }
 
     @Transactional
     fun sendContactRequest(userId: UUID, targetProfileId: Long): ContactResponse {
         val ownerProfile = profileRepository.findByKeycloakUserId(userId)
-            ?: throw NotFoundException("Profile not found for user $userId")
+            ?: throw NotFoundException.userNotFound(userId)
 
         val targetProfile = profileRepository.findById(targetProfileId)
             .orElseThrow { NotFoundException.profileNotFound(targetProfileId) }
 
         if (ownerProfile.id == targetProfileId) {
-            throw ProfileServiceException(ProfileErrorType.VALIDATION, "Нельзя добавить себя в контакты")
+            throw ProfileServiceException(ProfileErrorType.VALIDATION, "Cannot add yourself to contacts")
         }
 
-        // Проверяем, нет ли уже существующего контакта
         val existingContact = contactRepository.findContactBetweenUsers(ownerProfile.id!!, targetProfileId)
         if (existingContact != null) {
-            throw ProfileServiceException(ProfileErrorType.VALIDATION, "Контакт уже существует")
+            throw ProfileServiceException(ProfileErrorType.VALIDATION, "Contact already exists")
         }
 
         val contact = Contact(
@@ -63,19 +63,20 @@ class ContactService(
     @Transactional
     fun updateContactStatus(userId: UUID, contactId: Long, status: ContactStatusResponse): ContactResponse {
         val profile = profileRepository.findByKeycloakUserId(userId)
-            ?: throw NotFoundException("Profile not found for user $userId")
+            ?: throw NotFoundException.userNotFound(userId)
 
         val contact = contactRepository.findById(contactId)
-            .orElseThrow { NotFoundException("Контакт не найден") }
+            .orElseThrow { NotFoundException.contactNotFound(contactId) }
 
         if (contact.owner.id != profile.id) {
-            throw ProfileServiceException(ProfileErrorType.ACCESS_DENIED, "Нет прав для изменения этого контакта")
+            throw ProfileServiceException(ProfileErrorType.ACCESS_DENIED, "No rights to update this contact")
         }
 
         contact.status = when (status) {
             ContactStatusResponse.PENDING -> ContactStatus.PENDING
             ContactStatusResponse.ACCEPTED -> ContactStatus.ACCEPTED
             ContactStatusResponse.BLOCKED -> ContactStatus.BLOCKED
+            null -> ContactStatus.PENDING
         }
 
         val savedContact = contactRepository.save(contact)
@@ -85,13 +86,13 @@ class ContactService(
     @Transactional
     fun removeContact(userId: UUID, contactId: Long) {
         val profile = profileRepository.findByKeycloakUserId(userId)
-            ?: throw NotFoundException("Profile not found for user $userId")
+            ?: throw NotFoundException.userNotFound(userId)
 
         val contact = contactRepository.findById(contactId)
-            .orElseThrow { NotFoundException("Контакт не найден") }
+            .orElseThrow { NotFoundException.contactNotFound(contactId) }
 
         if (contact.owner.id != profile.id && contact.contact.id != profile.id) {
-            throw ProfileServiceException(ProfileErrorType.ACCESS_DENIED, "Нет прав для удаления этого контакта")
+            throw ProfileServiceException(ProfileErrorType.ACCESS_DENIED, "No rights to remove this contact")
         }
 
         contactRepository.delete(contact)
@@ -106,6 +107,7 @@ private fun Contact.toContactResponse(avatarUrlBuilder: (String?) -> String?): C
             ContactStatus.PENDING -> ContactStatusResponse.PENDING
             ContactStatus.ACCEPTED -> ContactStatusResponse.ACCEPTED
             ContactStatus.BLOCKED -> ContactStatusResponse.BLOCKED
+            else -> ContactStatusResponse.PENDING
         }
     )
 }

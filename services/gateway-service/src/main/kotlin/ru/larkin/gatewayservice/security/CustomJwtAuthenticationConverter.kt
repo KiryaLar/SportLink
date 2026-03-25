@@ -24,7 +24,6 @@ class CustomJwtAuthenticationConverter : Converter<Jwt, Mono<out AbstractAuthent
     private fun extractAuthorities(jwt: Jwt): Collection<GrantedAuthority> {
         val authorities = jwtGrantedAuthoritiesConverter.convert(jwt)?.toMutableList() ?: mutableListOf()
 
-        // Извлекаем realm roles из токена Keycloak
         val realmAccess = jwt.getClaim<Map<String, List<String>>>("realm_access")
         val roles = realmAccess?.get("roles") ?: emptyList()
         val roleAuthorities = roles.map { role -> SimpleGrantedAuthority("ROLE_$role") }
