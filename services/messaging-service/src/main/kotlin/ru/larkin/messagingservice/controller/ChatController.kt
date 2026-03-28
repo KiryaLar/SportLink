@@ -12,7 +12,7 @@ import ru.larkin.messagingservice.service.ChatService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/chats")
+@RequestMapping("/chats")
 class ChatController(
     private val chatService: ChatService
 ) {

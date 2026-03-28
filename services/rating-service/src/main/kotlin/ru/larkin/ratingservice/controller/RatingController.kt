@@ -14,7 +14,7 @@ import ru.larkin.ratingservice.service.RatingService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/ratings")
+@RequestMapping("/ratings")
 class RatingController(
     private val ratingService: RatingService
 ) {

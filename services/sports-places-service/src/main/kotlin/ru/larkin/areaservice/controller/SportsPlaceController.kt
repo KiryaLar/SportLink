@@ -15,7 +15,7 @@ import ru.larkin.areaservice.service.SportsPlaceService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/sports-places")
+@RequestMapping("/sports-places")
 class SportsPlaceController(
     private val sportsPlaceService: SportsPlaceService
 ) {

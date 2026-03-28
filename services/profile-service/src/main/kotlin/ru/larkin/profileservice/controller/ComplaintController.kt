@@ -13,7 +13,7 @@ import ru.larkin.profileservice.service.ComplaintService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/complaints")
+@RequestMapping("/complaints")
 class ComplaintController(
     private val complaintService: ComplaintService
 ) {

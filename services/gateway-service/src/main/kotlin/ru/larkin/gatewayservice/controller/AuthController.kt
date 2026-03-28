@@ -7,16 +7,13 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import ru.larkin.gatewayservice.service.KeycloakAdminService
 import jakarta.validation.Valid
-import jakarta.validation.constraints.Email
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.Size
 import ru.larkin.gatewayservice.dto.req.LoginRequest
 import ru.larkin.gatewayservice.dto.req.RegisterRequest
 import ru.larkin.gatewayservice.dto.resp.LoginResponse
 import ru.larkin.gatewayservice.dto.resp.RegisterResponse
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1/auth/")
 class AuthController(
     private val keycloakAdminService: KeycloakAdminService
 ) {

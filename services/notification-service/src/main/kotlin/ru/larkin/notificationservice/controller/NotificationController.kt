@@ -11,7 +11,7 @@ import ru.larkin.notificationservice.service.NotificationService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/notifications")
+@RequestMapping("/notifications")
 class NotificationController(
     private val notificationService: NotificationService
 ) {

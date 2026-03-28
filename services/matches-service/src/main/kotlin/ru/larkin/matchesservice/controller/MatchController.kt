@@ -17,7 +17,7 @@ import ru.larkin.matchesservice.service.MatchService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/matches")
+@RequestMapping("/matches")
 class MatchController(
     private val matchService: MatchService,
     private val participantService: MatchParticipantService

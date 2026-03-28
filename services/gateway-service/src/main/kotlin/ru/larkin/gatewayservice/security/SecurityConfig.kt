@@ -36,6 +36,7 @@ class SecurityConfig {
                     ).permitAll()
                     .pathMatchers(
                         "/actuator/**",
+                        "/swagger-ui.html",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/api-docs/**"

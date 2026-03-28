@@ -12,7 +12,7 @@ import ru.larkin.profileservice.service.ProfileService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/profiles")
+@RequestMapping("/profiles")
 class ProfileController(
     private val profileService: ProfileService,
     private val contactService: ContactService
