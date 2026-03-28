@@ -17,6 +17,7 @@ import ru.larkin.messagingservice.repository.MessageRepository
 import java.time.Instant
 import java.util.UUID
 
+@Transactional
 @Service
 class ChatService(
     private val chatRepository: ChatRepository,
@@ -48,7 +49,6 @@ class ChatService(
             .map { it.toChatResponse() }
     }
 
-    @Transactional
     fun getOrCreateDirectChat(userId1: UUID, userId2: UUID): ChatResponse {
         val existingChat = chatRepository.findDirectChatBetweenUsers(userId1, userId2)
         if (existingChat != null) {
@@ -66,7 +66,6 @@ class ChatService(
         return savedChat.toChatResponse()
     }
 
-    @Transactional
     fun createMatchChat(matchId: Long, participants: List<UUID>): ChatResponse {
         val chat = Chat(
             chatType = ChatType.MATCH,
@@ -85,7 +84,6 @@ class ChatService(
             .map { it.toMessageResponse() }
     }
 
-    @Transactional
     fun sendMessage(chatId: Long, senderId: UUID, request: SendMessageRequest): MessageResponse {
         val chat = chatRepository.findById(chatId)
             .orElseThrow { NotFoundException.chatNotFound(chatId) }
@@ -110,7 +108,6 @@ class ChatService(
         return savedMessage.toMessageResponse()
     }
 
-    @Transactional
     fun markMessagesAsRead(chatId: Long, userId: UUID) {
         val unreadMessages = messageRepository.findUnreadMessages(chatId, userId)
         unreadMessages.forEach {
@@ -119,7 +116,6 @@ class ChatService(
         messageRepository.saveAll(unreadMessages)
     }
 
-    @Transactional
     fun deleteChat(chatId: Long) {
         if (!chatRepository.existsById(chatId)) {
             throw NotFoundException.chatNotFound(chatId)
@@ -133,7 +129,6 @@ class ChatService(
         return messageRepository.countByChatIdAndStatus(chatId, MessageStatus.SENT)
     }
 
-    @Transactional
     fun sendMessage(chatId: Long, senderId: UUID, content: String): MessageResponse {
         val chat = chatRepository.findById(chatId)
             .orElseThrow { NotFoundException.chatNotFound(chatId) }
