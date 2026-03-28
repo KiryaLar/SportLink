@@ -100,10 +100,10 @@ class KeycloakAdminService(
      * Получение admin access token
      */
     private fun getAdminToken(): String {
-        val tokenUrl = "/realms/master/protocol/openid-connect/token"
+        val tokenUrl = "/realms/sportlink/protocol/openid-connect/token"
 
         val body = "grant_type=password" +
-                "&client_id=admin-cli" +
+                "&client_id=gateway-service" +
                 "&username=$adminUsername" +
                 "&password=$adminPassword"
 

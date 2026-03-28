@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 @SpringBootApplication
 @EnableJpaAuditing
 @ConfigurationPropertiesScan
-class UserServiceApplication
+class ProfileServiceApplication
 
 fun main(args: Array<String>) {
-    runApplication<UserServiceApplication>(*args)
+    runApplication<ProfileServiceApplication>(*args)
 }
 

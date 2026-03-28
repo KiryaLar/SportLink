@@ -11,7 +11,6 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.jwt.Jwt
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.web.SecurityFilterChain
@@ -54,19 +53,20 @@ class SecurityConfig {
             setAuthorityPrefix("SCOPE_")
         }
 
-        return Converter { jwt ->
-            val authorities = mutableSetOf<GrantedAuthority>()
+        return object : Converter<Jwt, AbstractAuthenticationToken> {
+            override fun convert(jwt: Jwt): AbstractAuthenticationToken {
+                val authorities = mutableSetOf<GrantedAuthority>()
 
-            // 1) scopes -> SCOPE_xxx
-            authorities += scopesConverter.convert(jwt).orEmpty()
+                authorities += scopesConverter.convert(jwt).orEmpty()
 
-            // 2) realm roles -> ROLE_xxx
-            val realmRoles = (jwt.claims["realm_access"] as? Map<*, *>)?.get("roles") as? Collection<*>
-            realmRoles.orEmpty().forEach { role ->
-                authorities += SimpleGrantedAuthority("ROLE_${role.toString()}")
+                val realmRoles =
+                    (jwt.claims["realm_access"] as? Map<*, *>)?.get("roles") as? Collection<*>
+                realmRoles.orEmpty().forEach { role ->
+                    authorities += SimpleGrantedAuthority("ROLE_${role.toString()}")
+                }
+
+                return JwtAuthenticationToken(jwt, authorities, jwt.subject)
             }
-
-            JwtAuthenticationToken(jwt, authorities, jwt.subject)
         }
     }
 }

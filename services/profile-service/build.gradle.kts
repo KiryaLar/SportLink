@@ -59,8 +59,8 @@ dependencies {
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.oauth2.resource.server)
 
-    implementation(libs.spring.boot.starter.kafka)
-    implementation(libs.spring.kafka.test)
+//    implementation(libs.spring.boot.starter.kafka)
+//    implementation(libs.spring.kafka.test)
 }
 
 tasks.withType<Test> {

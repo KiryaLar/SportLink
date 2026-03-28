@@ -1,5 +1,6 @@
 package ru.larkin.matchesservice.controller
 
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -29,7 +30,7 @@ class MatchController(
     }
 
     @PostMapping("/search")
-    fun searchMatches(@RequestBody request: MatchSearchRequest): ResponseEntity<List<MatchSummaryResponse>> {
+    fun searchMatches(@Valid @RequestBody request: MatchSearchRequest): ResponseEntity<List<MatchSummaryResponse>> {
         return ResponseEntity.ok(matchService.searchMatches(request))
     }
 
@@ -47,7 +48,7 @@ class MatchController(
     @PostMapping
     fun createMatch(
         @AuthenticationPrincipal jwt: Jwt,
-        @RequestBody request: MatchCreateRequest
+        @Valid @RequestBody request: MatchCreateRequest
     ): ResponseEntity<MatchResponse> {
         val userId = UUID.fromString(jwt.subject)
         return ResponseEntity.ok(matchService.createMatch(userId, request))
@@ -56,7 +57,7 @@ class MatchController(
     @PutMapping("/{id}")
     fun updateMatch(
         @PathVariable("id") matchId: Long,
-        @RequestBody request: MatchUpdateRequest
+        @Valid @RequestBody request: MatchUpdateRequest
     ): ResponseEntity<MatchResponse> {
         return ResponseEntity.ok(matchService.updateMatch(matchId, request))
     }

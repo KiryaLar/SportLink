@@ -20,7 +20,7 @@ interface ProfileRepository : JpaRepository<Profile, Long> {
         """
         SELECT DISTINCT p FROM Profile p
         LEFT JOIN p.sports s
-        WHERE p.status = 'ACTIVE'
+        WHERE p.status = :status
         AND (:sport IS NULL OR s.sport = :sport)
         AND (:city IS NULL OR p.city = :city)
         AND (:minLevel IS NULL OR s.level >= :minLevel)
@@ -31,7 +31,8 @@ interface ProfileRepository : JpaRepository<Profile, Long> {
         @Param("sport") sport: String?,
         @Param("city") city: String?,
         @Param("minLevel") minLevel: Int?,
-        @Param("maxLevel") maxLevel: Int?
+        @Param("maxLevel") maxLevel: Int?,
+        @Param("status") status: ProfileStatus = ProfileStatus.ACTIVE
     ): List<Profile>
 
     @Query(
@@ -43,7 +44,7 @@ interface ProfileRepository : JpaRepository<Profile, Long> {
             p.avatarKey
         )
         FROM Profile p
-        WHERE p.status = 'ACTIVE'
+        WHERE p.status = :status
         AND (:city IS NULL OR p.city = :city)
         AND (
             (:sport IS NULL AND (
@@ -73,6 +74,7 @@ interface ProfileRepository : JpaRepository<Profile, Long> {
         @Param("sport") sport: String?,
         @Param("city") city: String?,
         @Param("minLevel") minLevel: Int?,
-        @Param("maxLevel") maxLevel: Int?
+        @Param("maxLevel") maxLevel: Int?,
+        @Param("status") status: ProfileStatus = ProfileStatus.ACTIVE
     ): List<ProfileSummaryResponse>
 }

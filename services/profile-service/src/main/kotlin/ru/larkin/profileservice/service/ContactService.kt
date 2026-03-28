@@ -2,7 +2,6 @@ package ru.larkin.profileservice.service
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import ru.larkin.profileservice.dto.req.ContactRequest
 import ru.larkin.profileservice.dto.resp.ContactResponse
 import ru.larkin.profileservice.dto.resp.ContactStatusResponse
 import ru.larkin.profileservice.dto.resp.ProfileSummaryResponse
@@ -61,7 +60,7 @@ class ContactService(
     }
 
     @Transactional
-    fun updateContactStatus(userId: UUID, contactId: Long, status: ContactStatusResponse): ContactResponse {
+    fun updateContactStatus(userId: UUID, contactId: Long, status: String): ContactResponse {
         val profile = profileRepository.findByKeycloakUserId(userId)
             ?: throw NotFoundException.userNotFound(userId)
 
@@ -72,12 +71,7 @@ class ContactService(
             throw ProfileServiceException(ProfileErrorType.ACCESS_DENIED, "No rights to update this contact")
         }
 
-        contact.status = when (status) {
-            ContactStatusResponse.PENDING -> ContactStatus.PENDING
-            ContactStatusResponse.ACCEPTED -> ContactStatus.ACCEPTED
-            ContactStatusResponse.BLOCKED -> ContactStatus.BLOCKED
-            null -> ContactStatus.PENDING
-        }
+        contact.status = ContactStatus.valueOf(status)
 
         val savedContact = contactRepository.save(contact)
         return savedContact.toContactResponse(imageStorageService::buildPublicUrlByKey)

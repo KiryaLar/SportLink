@@ -27,21 +27,7 @@
         "description": "Administrator role",
         "composite": false
       }
-    ],
-    "client": {
-      "realm-management": [
-        {
-          "name": "realm-admin",
-          "description": "Realm Administrator",
-          "composite": true,
-          "composites": {
-            "client": {
-              "realm-management": ["manage-realm", "view-realm", "manage-users", "view-users"]
-            }
-          }
-        }
-      ]
-    }
+    ]
   },
   "defaultRoles": ["USER"],
   "clients": [

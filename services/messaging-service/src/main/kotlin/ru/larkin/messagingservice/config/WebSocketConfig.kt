@@ -11,18 +11,18 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 class WebSocketConfig : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
-        // Включаем простой in-memory broker для topic и queue
+        // In-memory broker для topic и queue
         registry.enableSimpleBroker("/topic", "/queue")
 
-        // Устанавливаем префикс для методов отправки сообщений
+        // Префикс для методов отправки сообщений
         registry.setApplicationDestinationPrefixes("/app")
 
-        // Устанавливаем префикс для личных сообщений
+        // Префикс для личных сообщений
         registry.setUserDestinationPrefix("/user")
     }
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
-        // Регистрируем STOMP endpoint для WebSocket подключений
+        // STOMP endpoint для WebSocket подключений
         registry.addEndpoint("/ws-chat")
             .setAllowedOriginPatterns("*")
             .withSockJS()

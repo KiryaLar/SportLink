@@ -101,14 +101,14 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleNotReadable(
-        ex: HttpMessageNotReadableException?,
+        ex: HttpMessageNotReadableException,
         request: HttpServletRequest
     ): ResponseEntity<ProblemDetail> {
         log.warn("Malformed JSON: {} {}", request.method, request.requestURI, ex)
         val problem = baseProblem(
             HttpStatus.BAD_REQUEST,
             "Malformed JSON request",
-            "Request body is invalid or unreadable",
+            ex.message,
             request
         )
         return ResponseEntity.badRequest().body(problem)
@@ -222,14 +222,14 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception::class)
     fun handleGeneric(
-        ex: Exception?,
+        ex: Exception,
         request: HttpServletRequest
     ): ResponseEntity<ProblemDetail> {
         log.error("Unhandled exception: {} {}", request.method, request.requestURI, ex)
         val problem = baseProblem(
             HttpStatus.INTERNAL_SERVER_ERROR,
-            "Internal server error",
             "Unexpected error occurred",
+            ex.message,
             request
         )
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem)

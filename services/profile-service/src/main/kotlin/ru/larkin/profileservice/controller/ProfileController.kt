@@ -1,9 +1,11 @@
 package ru.larkin.profileservice.controller
 
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.*
+import ru.larkin.profileservice.dto.req.ContactStatusRequest
 import ru.larkin.profileservice.dto.req.ProfileCreateRequest
 import ru.larkin.profileservice.dto.req.ProfileUpdateRequest
 import ru.larkin.profileservice.dto.resp.*
@@ -47,7 +49,7 @@ class ProfileController(
     @PostMapping
     fun createProfile(
         @AuthenticationPrincipal jwt: Jwt,
-        @RequestBody request: ProfileCreateRequest
+        @Valid @RequestBody request: ProfileCreateRequest
     ): ResponseEntity<ProfileResponse> {
         val userId = UUID.fromString(jwt.subject)
         val email = jwt.getClaimAsString("email") ?: request.email
@@ -82,10 +84,10 @@ class ProfileController(
     fun updateContactStatus(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable("contactId") contactId: Long,
-        @RequestParam status: ContactStatusResponse
+        @Valid @RequestParam statusRequest: ContactStatusRequest
     ): ResponseEntity<ContactResponse> {
         val userId = UUID.fromString(jwt.subject)
-        return ResponseEntity.ok(contactService.updateContactStatus(userId, contactId, status))
+        return ResponseEntity.ok(contactService.updateContactStatus(userId, contactId, statusRequest.status))
     }
 
     @DeleteMapping("/contacts/{contactId}")

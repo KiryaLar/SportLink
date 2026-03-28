@@ -65,13 +65,13 @@ services:
   # TODO: Don't forget about configured security settings
   keycloak:
     image: quay.io/keycloak/keycloak:26.2
-    command: start-dev --import-realm
+    command: start-dev --import-realm --verbose
     ports:
       - "${KEYCLOAK_PORT:-8443}:8080"
       - "${KEYCLOAK_HEALTH_PORT:-9000}:9000"
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: sportlink

@@ -34,11 +34,12 @@ class Profile(
     var avatarKey: String? = null
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     var status: ProfileStatus = ProfileStatus.ACTIVE
 
     var description: String? = null
 
-    @OneToMany(cascade = [CascadeType.ALL])
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "profile")
     var sports: MutableList<SportInfo> = mutableListOf()
 
     @OneToMany(cascade = [CascadeType.ALL])
