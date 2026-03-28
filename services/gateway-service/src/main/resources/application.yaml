@@ -16,10 +16,9 @@ spring:
     gateway:
       server:
         webflux:
-          # StripPrefix не нужен - микросервисы ожидают /api/v1/...
           default-filters:
             - AddRequestHeader=X-Gateway, gateway-service
-            - DedupResponseHeader=Access-Control Access-Control-Allow-Credentials
+            - StripPrefix=2
 
           globalcors:
             cors-configurations:
@@ -114,6 +113,9 @@ springdoc:
   api-docs:
     enabled: true
     path: /v3/api-docs
+  servers:
+    - url: /api/v1
+      description: API v1
 
 # Keycloak конфигурация
 keycloak:

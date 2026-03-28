@@ -1,8 +1,4 @@
 plugins {
-//    alias(libs.plugins.kotlin.jvm)
-//    alias(libs.plugins.kotlin.spring)
-//    alias(libs.plugins.spring.boot)
-//    alias(libs.plugins.spring.dependency.management)
     id("sportlink.java-conventions")
 }
 
@@ -11,6 +7,7 @@ description = "gateway-service"
 dependencies {
     //    Base
     implementation(libs.spring.boot.starter.webflux)
+    implementation(libs.kotlin.reflect)
 
 //    Gateway
     implementation(libs.spring.cloud.starter.gateway.server.webflux)
@@ -36,7 +33,7 @@ dependencies {
     implementation(libs.springdoc.openapi.webflux.ui)
 
 //    Validation
-    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation(libs.spring.boot.starter.validation)
 
 //    Tests
     testRuntimeOnly(libs.junit.platform.launcher)
