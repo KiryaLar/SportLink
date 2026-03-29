@@ -9,7 +9,6 @@ pluginManagement {
 }
 
 include(
-    "keycloak-event-listener",
     "services:profile-service",
     "services:matches-service",
     "services:sports-places-service",
