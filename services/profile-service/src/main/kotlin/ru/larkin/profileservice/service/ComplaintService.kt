@@ -88,7 +88,7 @@ class ComplaintService(
     }
 }
 
-private fun Complaint.toComplaintResponse(): ComplaintResponse {
+fun Complaint.toComplaintResponse(): ComplaintResponse {
     return ComplaintResponse(
         id = id!!,
         reporterProfileId = reporterProfile.id!!,

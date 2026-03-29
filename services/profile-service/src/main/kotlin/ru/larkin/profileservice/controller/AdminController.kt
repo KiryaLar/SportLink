@@ -28,8 +28,9 @@ class AdminController(
         @RequestParam(defaultValue = "50") size: Int
     ): ResponseEntity<Map<String, Any>> {
         val profiles = profileAdminService.getAllProfiles(PageRequest.of(page, size))
+        val avatarUrlBuilder: (String?) -> String = { key -> key ?: "" }
         return ResponseEntity.ok(mapOf(
-            "content" to profiles.content.map { it.toProfileResponse() },
+            "content" to profiles.content.map { it.toProfileResponse(avatarUrlBuilder) },
             "total" to profiles.totalElements
         ))
     }

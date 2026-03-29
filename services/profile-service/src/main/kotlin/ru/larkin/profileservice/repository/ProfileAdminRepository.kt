@@ -24,5 +24,5 @@ interface ProfileAdminRepository : JpaRepository<Profile, Long> {
     @Query("SELECT COUNT(p) FROM Profile p WHERE p.status = 'BANNED'")
     fun countBannedUsers(): Long
 
-    fun findAll(pageable: Pageable): Page<Profile>
+    override fun findAll(pageable: Pageable): Page<Profile>
 }

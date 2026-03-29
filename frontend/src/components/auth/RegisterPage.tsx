@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { authService, RegisterRequest } from '../services/auth.service';
-import './RegisterPage.css';
+import { authService, RegisterRequest } from '../../services/auth.service';
 
 interface RegisterPageProps {
   onSuccess?: () => void;
