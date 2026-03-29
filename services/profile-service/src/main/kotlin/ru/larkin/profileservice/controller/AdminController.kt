@@ -9,6 +9,7 @@ import ru.larkin.profileservice.dto.resp.ProfileResponse
 import ru.larkin.profileservice.entity.ComplaintStatus
 import ru.larkin.profileservice.service.ComplaintService
 import ru.larkin.profileservice.service.ProfileAdminService
+import ru.larkin.profileservice.utils.toComplaintResponse
 import ru.larkin.profileservice.utils.toProfileResponse
 
 @RestController
@@ -85,7 +86,7 @@ class AdminController(
     ): ResponseEntity<Map<String, Any>> {
         val complaints = complaintService.getAllComplaints(PageRequest.of(page, size))
         return ResponseEntity.ok(mapOf(
-            "content" to complaints.content.map { it.toComplaintResponse() },
+            "content" to complaints.content,
             "total" to complaints.totalElements
         ))
     }

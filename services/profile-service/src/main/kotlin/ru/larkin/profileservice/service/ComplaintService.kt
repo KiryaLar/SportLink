@@ -12,6 +12,7 @@ import ru.larkin.profileservice.exception.NotFoundException
 import ru.larkin.profileservice.exception.ProfileServiceException
 import ru.larkin.profileservice.repository.ComplaintRepository
 import ru.larkin.profileservice.repository.ProfileRepository
+import ru.larkin.profileservice.utils.toComplaintResponse
 import java.util.UUID
 
 @Service
@@ -86,17 +87,4 @@ class ComplaintService(
         }
         complaintRepository.deleteById(complaintId)
     }
-}
-
-fun Complaint.toComplaintResponse(): ComplaintResponse {
-    return ComplaintResponse(
-        id = id!!,
-        reporterProfileId = reporterProfile.id!!,
-        targetProfileId = targetProfile.id!!,
-        complaintType = complaintType,
-        complaintText = complaintText,
-        status = status,
-        createdAt = createdAt,
-        reviewedAt = reviewedAt
-    )
 }
