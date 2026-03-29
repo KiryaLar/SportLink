@@ -1,8 +1,9 @@
 package ru.larkin.keycloakeventlistener
 
 import org.keycloak.events.Event
-import org.keycloak.events.EventListenerProvider
 import org.keycloak.events.EventType
+import org.keycloak.events.AdminEvent
+import org.keycloak.events.EventListenerProvider
 import org.slf4j.LoggerFactory
 import ru.larkin.keycloakeventlistener.events.KeycloakEvent
 import java.util.UUID
@@ -13,6 +14,9 @@ class ProfileEventListener : EventListenerProvider {
         private val log = LoggerFactory.getLogger(ProfileEventListener::class.java)
     }
 
+    /**
+     * Обработка событий пользователя (REGISTER, LOGIN, etc.)
+     */
     override fun onEvent(event: Event) {
         val kafkaTemplate = ProfileEventListenerFactory.getKafkaTemplate()
         if (kafkaTemplate == null) {
@@ -71,7 +75,7 @@ class ProfileEventListener : EventListenerProvider {
             kafkaTemplate.send("keycloak-profile-updates", kafkaEvent.userId, kafkaEvent)
                 .whenComplete { result, exception ->
                     if (exception != null) {
-                        log.error("Failed to send event to Kafka: ${exception.message}", exception)
+                        log.error("Failed to send event to Kafka: ${exception.message}", exception)       
                     } else {
                         log.info(
                             "Event sent to Kafka: topic={}, partition={}, offset={}",
@@ -86,11 +90,16 @@ class ProfileEventListener : EventListenerProvider {
         }
     }
 
-    override fun onEvent(event: Event, details: Boolean) {
-        onEvent(event)
+    /**
+     * Обработка админ-собыствий (создание пользователей через admin API)
+     * Требуется для Keycloak 24+
+     */
+    override fun onEvent(event: AdminEvent, includeRepresentation: Boolean) {
+        // Игнорируем admin events - они обрабатываются через обычные Event
+        log.debug("Admin event received (ignored): type={}, realmId={}", event.operationType, event.realmId)
     }
 
     override fun close() {
-        // Закрытие ресурсов
+        // Закрытие ресурсов (если нужно)
     }
 }

@@ -2,23 +2,21 @@ package ru.larkin.keycloakeventlistener
 
 import org.keycloak.events.EventListenerProvider
 import org.keycloak.events.EventListenerProviderFactory
-import org.keycloak.events.EventListenerTransactionManager
 import org.keycloak.models.KeycloakSession
 import org.keycloak.models.KeycloakSessionFactory
 import org.springframework.kafka.core.KafkaTemplate
-import java.util.concurrent.CompletableFuture
 
 class ProfileEventListenerFactory : EventListenerProviderFactory {
 
     companion object {
         const val PROVIDER_ID = "sportlink-profile-event-listener"
         private var kafkaTemplate: KafkaTemplate<String, Any>? = null
-        
+
         @JvmStatic
         fun setKafkaTemplate(template: KafkaTemplate<String, Any>) {
             kafkaTemplate = template
         }
-        
+
         @JvmStatic
         fun getKafkaTemplate(): KafkaTemplate<String, Any>? = kafkaTemplate
     }
@@ -33,7 +31,15 @@ class ProfileEventListenerFactory : EventListenerProviderFactory {
         // Инициализация Kafka будет выполнена из Spring контекста
     }
 
+    /**
+     * Вызывается после инициализации всех провайдеров
+     * Требуется для Keycloak 24+
+     */
+    override fun postInit(sessionFactory: KeycloakSessionFactory?) {
+        // Пост-инициализация (не требуется для текущей реализации)
+    }
+
     override fun close() {
-        // Закрытие ресурсов
+        // Закрытие ресурсов (если нужно)
     }
 }
