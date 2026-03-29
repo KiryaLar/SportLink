@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Кирилл Ларкин",
+    "email": "kirya.lar@example.com",
+    "phone": "+7-999-123-45-67",
+    "city": "Москва",
+    "age": 23,
+    "description": "Ищу партнёров для регулярных тренировок.",
+    "sports": [
+      {
+        "sport": "FOOTBALL",
+        "level": 6,
+        "description": "Играл в любительской лиге."
+      },
+      {
+        "sport": "SWIMMING",
+        "level": 4,
+        "description": "2 раза в неделю, для выносливости."
+      }
+    ]
+  },
+  {
+    "name": "Максим Петров",
+    "email": "maksim.petrov@example.com",
+    "phone": "+7-917-333-98-76",
+    "city": "Казань",
+    "age": 34,
+    "description": "Люблю командные виды спорта, ищу игроков для регулярных игр по вечерам.",
+    "sports": [
+      {
+        "sport": "BASKETBALL",
+        "level": 7,
+        "description": "Играю на позиции разыгрывающего, опыт около 8 лет."
+      },
+      {
+        "sport": "VOLLEYBALL",
+        "level": 5,
+        "description": "Играю по выходным, хочу подтянуть подачу и приём."
+      }
+    ]
+  },
+  {
+    "name": "Анна Иванова",
+    "email": "anna.ivanova@example.com",
+    "phone": "+7-921-555-12-34",
+    "city": "Санкт-Петербург",
+    "age": 29,
+    "description": "Ищу компанию для утренних пробежек и участия в забегах на 5–10 км.",
+    "sports": [
+      {
+        "sport": "RUNNING",
+        "level": 6,
+        "description": "Бегаю 3 раза в неделю, комфортный темп 5:45–6:10."
+      },
+      {
+        "sport": "YOGA",
+        "level": 4,
+        "description": "Йога для восстановления 1–2 раза в неделю."
+      }
+    ]
+  }
+]

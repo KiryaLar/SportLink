@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.\\gradlew *)",
+      "Bash(powershell *)",
+      "Bash(type *)",
+      "Bash(get-content *)",
+      "Bash(select-object *)"
+    ]
+  }
+}
