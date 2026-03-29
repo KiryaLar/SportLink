@@ -23,14 +23,18 @@ class Match(
     @Column(nullable = false)
     var scheduledAt: Instant,
 
+//    TODO: Заменить название и координаты на sportsPlaceId ( и мб подтягивать данные оттуда)
     @Column(nullable = false)
-    var locationName: String,
+    var sportsPlaceId: Long,
 
-    @Column(nullable = false)
-    var latitude: Double,
-
-    @Column(nullable = false)
-    var longitude: Double,
+//    @Column(nullable = false)
+//    var locationName: String,
+//
+//    @Column(nullable = false)
+//    var latitude: Double,
+//
+//    @Column(nullable = false)
+//    var longitude: Double,
 
     @Column(nullable = false)
     var maxParticipants: Int,

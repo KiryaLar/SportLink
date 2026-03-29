@@ -11,7 +11,6 @@ import ru.larkin.common.events.NotificationEvent
 import ru.larkin.common.events.NotificationType
 import ru.larkin.common.events.Priority
 import ru.larkin.notificationservice.service.NotificationService
-import java.util.UUID
 
 @Component
 class MatchEventConsumer(

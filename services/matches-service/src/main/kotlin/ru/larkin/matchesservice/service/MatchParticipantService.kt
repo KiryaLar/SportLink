@@ -6,9 +6,11 @@ import ru.larkin.matchesservice.dto.resp.MatchParticipantResponse
 import ru.larkin.matchesservice.entity.MatchParticipant
 import ru.larkin.matchesservice.entity.ParticipantStatus
 import ru.larkin.matchesservice.exception.MatchServiceException
+import ru.larkin.matchesservice.exception.NotFoundException
 import ru.larkin.matchesservice.repository.MatchParticipantRepository
 import ru.larkin.matchesservice.repository.MatchRepository
-import java.util.UUID
+import ru.larkin.matchesservice.utils.toParticipantResponse
+import java.util.*
 
 @Service
 class MatchParticipantService(
@@ -29,9 +31,9 @@ class MatchParticipantService(
     }
 
     @Transactional
-    fun addParticipant(matchId: Long, userId: UUID, isOrganizer: Boolean = false): MatchParticipantResponse {
+    fun joinMatch(matchId: Long, userId: UUID): MatchParticipantResponse {
         val match = matchRepository.findById(matchId)
-            .orElseThrow { ru.larkin.matchesservice.exception.NotFoundException.matchNotFound(matchId) }
+            .orElseThrow { NotFoundException.matchNotFound(matchId) }
 
         if (matchParticipantRepository.existsByMatchIdAndUserId(matchId, userId)) {
             throw MatchServiceException("Вы уже являетесь участником этого матча")
@@ -43,18 +45,13 @@ class MatchParticipantService(
 
         val participant = MatchParticipant(
             userId = userId,
-            status = if (isOrganizer) ParticipantStatus.CONFIRMED else ParticipantStatus.PENDING
+            status = ParticipantStatus.PENDING
         )
 
         match.addParticipant(participant)
         matchParticipantRepository.save(participant)
 
         return participant.toParticipantResponse()
-    }
-
-    @Transactional
-    fun joinMatch(matchId: Long, userId: UUID): MatchParticipantResponse {
-        return addParticipant(matchId, userId, isOrganizer = false)
     }
 
     @Transactional
@@ -71,19 +68,34 @@ class MatchParticipantService(
     }
 
     @Transactional
-    fun confirmParticipant(participantId: Long) {
+    fun confirmParticipant(matchId: Long, participantId: Long) {
+        val match = matchRepository.findById(matchId)
+            .orElseThrow { NotFoundException.matchNotFound(matchId) }
+
         val participant = matchParticipantRepository.findById(participantId)
-            .orElseThrow { ru.larkin.matchesservice.exception.NotFoundException.participantNotFound(participantId) }
+            .orElseThrow { NotFoundException.participantNotFound(participantId) }
+
+        if (match.participants.none { it.id == participantId }) {
+            throw MatchServiceException("Участник с id $participantId не принадлежит матчу с id $matchId")
+        }
 
         participant.status = ParticipantStatus.CONFIRMED
         matchParticipantRepository.save(participant)
     }
 
     @Transactional
-    fun removeParticipant(participantId: Long) {
+    fun removeParticipant(matchId: Long, participantId: Long) {
+        val match = matchRepository.findById(matchId)
+            .orElseThrow { NotFoundException.matchNotFound(matchId) }
+
         if (!matchParticipantRepository.existsById(participantId)) {
-            throw ru.larkin.matchesservice.exception.NotFoundException.participantNotFound(participantId)
+            throw NotFoundException.participantNotFound(participantId)
         }
+
+        if (match.participants.none { it.id == participantId }) {
+            throw MatchServiceException("Участник с id $participantId не принадлежит матчу с id $matchId")
+        }
+
         matchParticipantRepository.deleteById(participantId)
     }
 
@@ -95,14 +107,4 @@ class MatchParticipantService(
         participant.status = ParticipantStatus.COMPLETED
         matchParticipantRepository.save(participant)
     }
-}
-
-fun MatchParticipant.toParticipantResponse(): MatchParticipantResponse {
-    return MatchParticipantResponse(
-        id = id!!,
-        userId = userId.toString(),
-        playerName = playerName,
-        status = status,
-        joinedAt = joinedAt
-    )
 }

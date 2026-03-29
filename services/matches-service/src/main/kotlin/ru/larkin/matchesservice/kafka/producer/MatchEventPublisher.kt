@@ -1,6 +1,7 @@
 package ru.larkin.matchesservice.kafka.producer
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
 import ru.larkin.common.events.MatchEvent
@@ -8,11 +9,12 @@ import ru.larkin.common.events.MatchEventType
 
 @Component
 class MatchEventPublisher(
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val kafkaTemplate: KafkaTemplate<String, Any>,
+    @Value("\${kafka.topics.match-events}")
+    private val topic: String
 ) {
 
     private val log = LoggerFactory.getLogger(MatchEventPublisher::class.java)
-    private val topic = "match-events"
 
     fun publishMatchCreated(event: MatchEvent) {
         publish(event.copy(type = MatchEventType.CREATED))

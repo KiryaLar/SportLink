@@ -62,18 +62,18 @@ class MatchController(
         return ResponseEntity.ok(matchService.updateMatch(matchId, request))
     }
 
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN') or @matchSecurity.isOrganizer(#id, authentication)")
+    @PatchMapping("/{matchId}/status")
+    @PreAuthorize("hasRole('ADMIN') or @matchService.isOrganizer(#matchId, authentication)")
     fun updateMatchStatus(
-        @PathVariable("id") matchId: Long,
+        @PathVariable("matchId") matchId: Long,
         @RequestParam status: MatchStatus
     ): ResponseEntity<MatchResponse> {
         return ResponseEntity.ok(matchService.updateMatchStatus(matchId, status))
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @matchSecurity.isOrganizer(#matchId, authentication)")
-    fun deleteMatch(@PathVariable("id") matchId: Long): ResponseEntity<Unit> {
+    @DeleteMapping("/{matchId}")
+    @PreAuthorize("hasRole('ADMIN') or @matchService.isOrganizer(#matchId, authentication)")
+    fun deleteMatch(@PathVariable("matchId") matchId: Long): ResponseEntity<Unit> {
         matchService.deleteMatch(matchId)
         return ResponseEntity.noContent().build()
     }
@@ -102,17 +102,23 @@ class MatchController(
         return ResponseEntity.noContent().build()
     }
 
-    @PostMapping("/participants/{participantId}/confirm")
-    @PreAuthorize("hasRole('ADMIN') or @matchSecurity.isOrganizerOfParticipant(#participantId, authentication)")
-    fun confirmParticipant(@PathVariable("participantId") participantId: Long): ResponseEntity<Unit> {
-        participantService.confirmParticipant(participantId)
+    @PostMapping("{matchId}/participants/{participantId}/confirm")
+    @PreAuthorize("hasRole('ADMIN') or @matchService.isOrganizer(#matchId, authentication)")
+    fun confirmParticipant(
+        @PathVariable("matchId") matchId: Long,
+        @PathVariable("participantId") participantId: Long,
+    ): ResponseEntity<Unit> {
+        participantService.confirmParticipant(matchId, participantId)
         return ResponseEntity.noContent().build()
     }
 
-    @DeleteMapping("/participants/{participantId}")
-    @PreAuthorize("hasRole('ADMIN') or @matchSecurity.isOrganizerOfParticipant(#participantId, authentication)")
-    fun removeParticipant(@PathVariable("participantId") participantId: Long): ResponseEntity<Unit> {
-        participantService.removeParticipant(participantId)
+    @DeleteMapping("{matchId}/participants/{participantId}")
+    @PreAuthorize("hasRole('ADMIN') or @matchService.isOrganizerOfParticipant(#matchId, authentication)")
+    fun removeParticipant(
+        @PathVariable("matchId") matchId: Long,
+        @PathVariable("participantId") participantId: Long,
+    ): ResponseEntity<Unit> {
+        participantService.removeParticipant(matchId, participantId)
         return ResponseEntity.noContent().build()
     }
 }

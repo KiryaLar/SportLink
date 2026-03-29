@@ -41,20 +41,33 @@ interface MatchRepository : JpaRepository<Match, Long> {
         SELECT m FROM Match m
         WHERE m.status = :status
         AND (:sport IS NULL OR m.sport = :sport)
-        AND (:latitude IS NULL OR :longitude IS NULL OR :radiusKm IS NULL 
-            OR (6371 * acos(
-                cos(radians(:latitude)) * cos(radians(m.latitude)) * 
-                cos(radians(m.longitude) - radians(:longitude)) + 
-                sin(radians(:latitude)) * sin(radians(m.latitude))
-            )) <= :radiusKm)
         ORDER BY m.scheduledAt ASC
         """
     )
     fun searchMatchesByLocation(
         @Param("sport") sport: String?,
         @Param("status") status: MatchStatus?,
-        @Param("latitude") latitude: Double?,
-        @Param("longitude") longitude: Double?,
-        @Param("radiusKm") radiusKm: Double?
     ): List<Match>
+
+//    @Query(
+//        """
+//        SELECT m FROM Match m
+//        WHERE m.status = :status
+//        AND (:sport IS NULL OR m.sport = :sport)
+//        AND (:latitude IS NULL OR :longitude IS NULL OR :radiusKm IS NULL
+//            OR (6371 * acos(
+//                cos(radians(:latitude)) * cos(radians(m.latitude)) *
+//                cos(radians(m.longitude) - radians(:longitude)) +
+//                sin(radians(:latitude)) * sin(radians(m.latitude))
+//            )) <= :radiusKm)
+//        ORDER BY m.scheduledAt ASC
+//        """
+//    )
+//    fun searchMatchesByLocation(
+//        @Param("sport") sport: String?,
+//        @Param("status") status: MatchStatus?,
+//        @Param("latitude") latitude: Double?,
+//        @Param("longitude") longitude: Double?,
+//        @Param("radiusKm") radiusKm: Double?
+//    ): List<Match>
 }

@@ -1,26 +1,36 @@
 package ru.larkin.matchesservice.service
 
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.security.core.Authentication
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import ru.larkin.common.events.MatchEvent
-import ru.larkin.common.events.MatchEventType
 import ru.larkin.matchesservice.dto.req.MatchCreateRequest
 import ru.larkin.matchesservice.dto.req.MatchSearchRequest
 import ru.larkin.matchesservice.dto.req.MatchUpdateRequest
 import ru.larkin.matchesservice.dto.resp.MatchResponse
 import ru.larkin.matchesservice.dto.resp.MatchSummaryResponse
 import ru.larkin.matchesservice.entity.Match
+import ru.larkin.matchesservice.entity.MatchParticipant
 import ru.larkin.matchesservice.entity.MatchStatus
+import ru.larkin.matchesservice.entity.ParticipantStatus
 import ru.larkin.matchesservice.exception.NotFoundException
 import ru.larkin.matchesservice.kafka.producer.MatchEventPublisher
+import ru.larkin.matchesservice.repository.MatchParticipantRepository
 import ru.larkin.matchesservice.repository.MatchRepository
-import java.util.UUID
+import ru.larkin.matchesservice.utils.toMatchEvent
+import ru.larkin.matchesservice.utils.toMatchResponse
+import ru.larkin.matchesservice.utils.toMatchSummaryResponse
+import ru.larkin.matchesservice.utils.toParticipantResponse
+import java.util.*
 
 @Service
 class MatchService(
     private val matchRepository: MatchRepository,
     private val participantService: MatchParticipantService,
-    private val eventPublisher: MatchEventPublisher
+    private val eventPublisher: MatchEventPublisher,
+    private val matchParticipantRepository: MatchParticipantRepository
 ) {
 
     @Transactional(readOnly = true)
@@ -38,25 +48,27 @@ class MatchService(
     }
 
     @Transactional(readOnly = true)
+    fun getAllMatchesAdmin(pageable: Pageable): Page<Match> {
+        return matchRepository.findAll(pageable)
+    }
+
+    @Transactional(readOnly = true)
     fun searchMatches(request: MatchSearchRequest): List<MatchSummaryResponse> {
-        val matches = if (request.latitude != null && request.longitude != null && request.radiusKm != null) {
-            matchRepository.searchMatchesByLocation(
-                request.sport,
-                request.status,
-                request.latitude,
-                request.longitude,
-                request.radiusKm
-            )
-        } else {
-            matchRepository.searchMatches(
-                request.sport,
-                request.status,
-                request.dateFrom,
-                request.dateTo,
-                request.minLevel,
-                request.maxLevel
-            )
-        }
+//        val matches = if (request.latitude != null && request.longitude != null && request.radiusKm != null) {
+//            matchRepository.searchMatchesByLocation(
+//                request.sport,
+//                request.status,
+//            )
+//        } else {
+        val matches = matchRepository.searchMatches(
+            request.sport,
+            request.status,
+            request.dateFrom,
+            request.dateTo,
+            request.minLevel,
+            request.maxLevel
+        )
+
         return matches.filter { it.status != MatchStatus.CANCELLED }.map { it.toMatchSummaryResponse() }
     }
 
@@ -73,21 +85,24 @@ class MatchService(
             title = request.title,
             sport = request.sport,
             scheduledAt = request.scheduledAt,
-            locationName = request.locationName,
-            latitude = request.latitude,
-            longitude = request.longitude,
+            sportsPlaceId = request.sportsPlaceId,
             maxParticipants = request.maxParticipants,
             minLevel = request.minLevel,
             maxLevel = request.maxLevel,
-            description = request.description
+            description = request.description,
         )
 
         val savedMatch = matchRepository.save(match)
 
         // Добавляем организатора как первого участника
-        participantService.addParticipant(savedMatch.id!!, organizerId, isOrganizer = true)
+        val participant = MatchParticipant(
+            userId = organizerId,
+            status = ParticipantStatus.CONFIRMED
+        )
 
-        // Публикуем событие
+        match.addParticipant(participant)
+        matchParticipantRepository.save(participant)
+
         eventPublisher.publishMatchCreated(savedMatch.toMatchEvent())
 
         return savedMatch.toMatchResponse()
@@ -100,19 +115,15 @@ class MatchService(
 
         request.title?.let { match.title = it }
         request.scheduledAt?.let { match.scheduledAt = it }
-        request.locationName?.let { match.locationName = it }
-        request.latitude?.let { match.latitude = it }
-        request.longitude?.let { match.longitude = it }
         request.maxParticipants?.let { match.maxParticipants = it }
         request.minLevel?.let { match.minLevel = it }
         request.maxLevel?.let { match.maxLevel = it }
         request.description?.let { match.description = it }
 
         val updatedMatch = matchRepository.save(match)
-        
-        // Публикуем событие
+
         eventPublisher.publishMatchUpdated(updatedMatch.toMatchEvent())
-        
+
         return updatedMatch.toMatchResponse()
     }
 
@@ -123,15 +134,14 @@ class MatchService(
 
         match.status = status
         val updatedMatch = matchRepository.save(match)
-        
-        // Публикуем событие в зависимости от статуса
+
         when (status) {
             MatchStatus.CANCELLED -> eventPublisher.publishMatchCancelled(updatedMatch.toMatchEvent())
             MatchStatus.IN_PROGRESS -> eventPublisher.publishMatchStarted(updatedMatch.toMatchEvent())
             MatchStatus.FINISHED -> eventPublisher.publishMatchFinished(updatedMatch.toMatchEvent())
             else -> eventPublisher.publishMatchUpdated(updatedMatch.toMatchEvent())
         }
-        
+
         return updatedMatch.toMatchResponse()
     }
 
@@ -142,61 +152,16 @@ class MatchService(
         }
         matchRepository.deleteById(matchId)
     }
-}
 
-private fun Match.toMatchResponse(): MatchResponse {
-    return MatchResponse(
-        id = id!!,
-        organizerId = organizerId.toString(),
-        title = title,
-        sport = sport,
-        scheduledAt = scheduledAt,
-        locationName = locationName,
-        latitude = latitude,
-        longitude = longitude,
-        maxParticipants = maxParticipants,
-        currentParticipants = getParticipantCount(),
-        minLevel = minLevel,
-        maxLevel = maxLevel,
-        description = description,
-        status = status,
-        participants = participants.map { it.toParticipantResponse() },
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
-}
+    fun isOrganizer(matchId: Long, authentication: Authentication): Boolean {
+        val jwt = authentication.principal as? Jwt ?: return false
+        val userId = runCatching { UUID.fromString(jwt.subject) }.getOrNull() ?: return false
 
-private fun Match.toMatchSummaryResponse(): MatchSummaryResponse {
-    return MatchSummaryResponse(
-        id = id!!,
-        organizerId = organizerId.toString(),
-        title = title,
-        sport = sport,
-        scheduledAt = scheduledAt,
-        locationName = locationName,
-        latitude = latitude,
-        longitude = longitude,
-        maxParticipants = maxParticipants,
-        currentParticipants = getParticipantCount(),
-        minLevel = minLevel,
-        maxLevel = maxLevel,
-        status = status
-    )
-}
+        val match = matchRepository.findById(matchId).orElse(null) ?: return false
+        return match.organizerId == userId
+    }
 
-private fun Match.toMatchEvent(): MatchEvent {
-    return MatchEvent(
-        matchId = id!!,
-        type = MatchEventType.CREATED,
-        organizerId = organizerId,
-        title = title,
-        sport = sport,
-        scheduledAt = scheduledAt,
-        locationName = locationName,
-        latitude = latitude,
-        longitude = longitude,
-        maxParticipants = maxParticipants,
-        currentParticipants = getParticipantCount(),
-        status = status.name
-    )
+    fun isParticipant(matchId: Long, userId: UUID): Boolean {
+        return matchParticipantRepository.existsByMatchIdAndUserId(matchId, userId)
+    }
 }

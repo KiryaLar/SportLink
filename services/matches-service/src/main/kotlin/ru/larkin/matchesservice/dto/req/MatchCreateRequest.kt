@@ -1,11 +1,6 @@
 package ru.larkin.matchesservice.dto.req
 
-import jakarta.validation.constraints.Max
-import jakarta.validation.constraints.Min
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Positive
-import jakarta.validation.constraints.Size
+import jakarta.validation.constraints.*
 import java.time.Instant
 
 data class MatchCreateRequest(
@@ -20,17 +15,20 @@ data class MatchCreateRequest(
     @field:NotNull(message = "scheduledAt обязателен")
     val scheduledAt: Instant,
 
-    @field:NotBlank(message = "Локация не может быть пустой")
-    @field:Size(max = 255, message = "Локация не должна превышать 255 символов")
-    val locationName: String,
+    @field:NotNull(message = "sportsPlaceId обязателен")
+    var sportsPlaceId: Long,
 
-    @field:Min(value = -90, message = "Широта должна быть в диапазоне [-90; 90]")
-    @field:Max(value = 90, message = "Широта должна быть в диапазоне [-90; 90]")
-    val latitude: Double,
-
-    @field:Min(value = -180, message = "Долгота должна быть в диапазоне [-180; 180]")
-    @field:Max(value = 180, message = "Долгота должна быть в диапазоне [-180; 180]")
-    val longitude: Double,
+//    @field:NotBlank(message = "Локация не может быть пустой")
+//    @field:Size(max = 255, message = "Локация не должна превышать 255 символов")
+//    val locationName: String,
+//
+//    @field:Min(value = -90, message = "Широта должна быть в диапазоне [-90; 90]")
+//    @field:Max(value = 90, message = "Широта должна быть в диапазоне [-90; 90]")
+//    val latitude: Double,
+//
+//    @field:Min(value = -180, message = "Долгота должна быть в диапазоне [-180; 180]")
+//    @field:Max(value = 180, message = "Долгота должна быть в диапазоне [-180; 180]")
+//    val longitude: Double,
 
     @field:Positive(message = "maxParticipants должен быть положительным")
     val maxParticipants: Int,

@@ -58,8 +58,14 @@ class ComplaintService(
     }
 
     @Transactional(readOnly = true)
-    fun getComplaintsByStatus(status: ComplaintStatus, pageable: Pageable): Page<ComplaintResponse> {
+    fun getComplaintsByStatus(status: ComplaintStatus, pageable: Pageable): Page<ComplaintResponse> {     
         return complaintRepository.findByStatus(status, pageable)
+            .map { it.toComplaintResponse() }
+    }
+
+    @Transactional(readOnly = true)
+    fun getAllComplaints(pageable: Pageable): Page<ComplaintResponse> {
+        return complaintRepository.findAll(pageable)
             .map { it.toComplaintResponse() }
     }
 

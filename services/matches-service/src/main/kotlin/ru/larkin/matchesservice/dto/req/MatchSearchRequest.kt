@@ -16,14 +16,6 @@ data class MatchSearchRequest(
     val dateFrom: java.time.Instant? = null,
     val dateTo: java.time.Instant? = null,
 
-    @field:Min(value = -90, message = "Широта должна быть в диапазоне [-90; 90]")
-    @field:Max(value = 90, message = "Широта должна быть в диапазоне [-90; 90]")
-    val latitude: Double? = null,
-
-    @field:Min(value = -180, message = "Долгота должна быть в диапазоне [-180; 180]")
-    @field:Max(value = 180, message = "Долгота должна быть в диапазоне [-180; 180]")
-    val longitude: Double? = null,
-
     @field:Positive(message = "radiusKm должен быть положительным")
     val radiusKm: Double? = null,
 

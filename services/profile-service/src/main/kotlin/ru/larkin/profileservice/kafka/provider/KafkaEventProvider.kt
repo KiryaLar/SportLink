@@ -4,7 +4,7 @@ package ru.larkin.profileservice.kafka.provider
 //@Named("kafka-event-listener")
 //class KafkaEventProvider  RealmChangeEventProvider {
 //
-//    private static final String KAFKA_BOOTSTRAP_SERVERS = "localhost:9092";
+//    private static final String KAFKA_BOOTSTRAP_SERVERS = "localhost:29092";
 //    private static final String TOPIC = "keycloak-events";
 //
 //    private KafkaProducer<String, String> producer;
