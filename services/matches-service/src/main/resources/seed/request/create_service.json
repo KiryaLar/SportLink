@@ -1,0 +1,10 @@
+{
+  "title": "Тренировка по футболу",
+  "sport": "football",
+  "scheduledAt": "2026-04-05T18:30:00Z",
+  "sportsPlaceId": 1,
+  "maxParticipants": 10,
+  "minLevel": 1,
+  "maxLevel": 10,
+  "description": "Игра для любителей, берите форму и воду."
+}

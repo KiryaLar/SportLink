@@ -147,13 +147,18 @@ try {
 # 6. Создание матча
 Write-Host "`n[6] Создание матча..." -ForegroundColor Yellow
 try {
+    # Сначала получим список площадок
+    $placesResponse = Invoke-RestMethod -Uri "$BASE_URL/api/v1/sports-places" `
+        -Method Get `
+        -Headers @{ Authorization = "Bearer $TOKEN" }
+    
+    $sportsPlaceId = if ($placesResponse.Count -gt 0) { $placesResponse[0].id } else { 1 }
+
     $matchBody = @{
         title = "Тестовый матч"
         sport = "FOOTBALL"
         scheduledAt = "2024-04-15T18:00:00"
-        locationName = "Парк Горького"
-        latitude = 55.7297
-        longitude = 37.6015
+        sportsPlaceId = $sportsPlaceId
         maxParticipants = 10
         minLevel = 1
         maxLevel = 5
@@ -171,6 +176,7 @@ try {
     Write-Host "  ID: $MATCH_ID" -ForegroundColor Gray
     Write-Host "  Title: $($matchResponse.title)" -ForegroundColor Gray
     Write-Host "  Sport: $($matchResponse.sport)" -ForegroundColor Gray
+    Write-Host "  Sports Place ID: $($matchResponse.sportsPlaceId)" -ForegroundColor Gray
 } catch {
     Write-Host "✗ Ошибка создания матча" -ForegroundColor Red
     Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red

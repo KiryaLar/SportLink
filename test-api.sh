@@ -6,22 +6,16 @@
 BASE_URL="http://localhost:8080"
 TOKEN=""
 
-# Цвета для вывода
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
 echo_info() {
-    echo -e "${YELLOW}>>> $1${NC}"
+    echo -e "\033[1;33m>>> $1\033[0m"
 }
 
 echo_success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "\033[0;32m✓ $1\033[0m"
 }
 
 echo_error() {
-    echo -e "${RED}✗ $1${NC}"
+    echo -e "\033[0;31m✗ $1\033[0m"
 }
 
 # 1. Проверка доступности сервисов
@@ -34,26 +28,8 @@ else
     exit 1
 fi
 
-# 2. Регистрация нового пользователя
-echo_info "\n2. Регистрация пользователя..."
-REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test'$(date +%s)'@example.com",
-    "password": "password123",
-    "name": "Тестовый Пользователь"
-  }')
-
-echo "$REGISTER_RESPONSE" | jq .
-if echo "$REGISTER_RESPONSE" | jq -e '.userId' > /dev/null 2>&1; then
-    echo_success "Пользователь зарегистрирован"
-    USER_ID=$(echo "$REGISTER_RESPONSE" | jq -r '.userId')
-else
-    echo_error "Ошибка регистрации"
-fi
-
-# 3. Логин
-echo_info "\n3. Логин..."
+# 2. Логин (используем тестового пользователя)
+echo_info "\n2. Логин..."
 LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
@@ -61,19 +37,48 @@ LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
     "password": "user123"
   }')
 
-echo "$LOGIN_RESPONSE" | jq .
 TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.accessToken // empty')
 
 if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
     echo_success "Логин успешен, токен получен"
-    export TOKEN
+    echo "  Token: ${TOKEN:0:50}..."
 else
     echo_error "Ошибка логина"
-    exit 1
+    
+    # Пробуем создать нового пользователя и логинимся
+    echo_info "\n  Пробуем зарегистрировать нового пользователя..."
+    REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/register" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"email\": \"test$(date +%s)@example.com\",
+        \"password\": \"password123\",
+        \"name\": \"Тестовый Пользователь\"
+      }")
+    
+    if echo "$REGISTER_RESPONSE" | jq -e '.userId' > /dev/null 2>&1; then
+        echo_success "  Регистрация успешна"
+        
+        # Теперь логинимся с новым пользователем
+        EMAIL=$(echo "$REGISTER_RESPONSE" | jq -r '.email // empty')
+        LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
+          -H "Content-Type: application/json" \
+          -d "{\"email\": \"$EMAIL\", \"password\": \"password123\"}")
+        
+        TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.accessToken // empty')
+        if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+            echo_success "  Логин успешен"
+        else
+            echo_error "  Не удалось залогиниться"
+            exit 1
+        fi
+    else
+        echo_error "  Не удалось зарегистрировать пользователя"
+        exit 1
+    fi
 fi
 
-# 4. Получение списка площадок
-echo_info "\n4. Получение списка спортивных площадок..."
+# 3. Получение списка площадок
+echo_info "\n3. Получение списка спортивных площадок..."
 PLACES_RESPONSE=$(curl -s "$BASE_URL/api/v1/sports-places" \
   -H "Authorization: Bearer $TOKEN")
 
@@ -82,25 +87,30 @@ echo "Найдено площадок: $PLACES_COUNT"
 
 if [ "$PLACES_COUNT" -gt 0 ]; then
     echo_success "Площадки получены"
+    echo "  Первая площадка:"
     echo "$PLACES_RESPONSE" | jq '.[0]'
+    
+    # Сохраняем ID первой площадки для создания матча
+    SPORTS_PLACE_ID=$(echo "$PLACES_RESPONSE" | jq '.[0].id')
 else
     echo_error "Площадки не найдены"
+    SPORTS_PLACE_ID=1
 fi
 
-# 5. Получение профиля текущего пользователя
-echo_info "\n5. Получение профиля..."
+# 4. Получение профиля текущего пользователя
+echo_info "\n4. Получение профиля..."
 PROFILE_RESPONSE=$(curl -s "$BASE_URL/api/v1/profiles/my" \
   -H "Authorization: Bearer $TOKEN")
 
-echo "$PROFILE_RESPONSE" | jq .
-if [ "$(echo "$PROFILE_RESPONSE" | jq -r 'type')" == "object" ]; then
+if echo "$PROFILE_RESPONSE" | jq -e 'type == "object"' > /dev/null 2>&1; then
     echo_success "Профиль получен"
+    echo "$PROFILE_RESPONSE" | jq '.'
 else
     echo_info "Профиль не найден (нужно создать)"
 fi
 
-# 6. Создание профиля (если не существует)
-echo_info "\n6. Создание/обновление профиля..."
+# 5. Создание/обновление профиля
+echo_info "\n5. Создание/обновление профиля..."
 PROFILE_CREATE_RESPONSE=$(curl -s -X PUT "$BASE_URL/api/v1/profiles/my" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
@@ -116,51 +126,55 @@ PROFILE_CREATE_RESPONSE=$(curl -s -X PUT "$BASE_URL/api/v1/profiles/my" \
     ]
   }')
 
-echo "$PROFILE_CREATE_RESPONSE" | jq .
 if echo "$PROFILE_CREATE_RESPONSE" | jq -e '.id' > /dev/null 2>&1; then
     echo_success "Профиль создан/обновлён"
+    echo "  ID: $(echo "$PROFILE_CREATE_RESPONSE" | jq -r '.id')"
+    echo "  Name: $(echo "$PROFILE_CREATE_RESPONSE" | jq -r '.name')"
+    echo "  City: $(echo "$PROFILE_CREATE_RESPONSE" | jq -r '.city')"
 else
     echo_error "Ошибка создания профиля"
 fi
 
-# 7. Создание матча
-echo_info "\n7. Создание матча..."
-MATCH_CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/matches" \
+# 6. Создание матча
+echo_info "\n6. Создание матча..."
+MATCH_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/matches" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "title": "Тестовый матч",
-    "sport": "FOOTBALL",
-    "scheduledAt": "2024-04-15T18:00:00",
-    "locationName": "Парк Горького",
-    "latitude": 55.7297,
-    "longitude": 37.6015,
-    "maxParticipants": 10,
-    "minLevel": 1,
-    "maxLevel": 5,
-    "description": "Приглашаю всех желающих"
-  }')
+  -d "{
+    \"title\": \"Тестовый матч\",
+    \"sport\": \"FOOTBALL\",
+    \"scheduledAt\": \"2024-04-15T18:00:00\",
+    \"sportsPlaceId\": $SPORTS_PLACE_ID,
+    \"maxParticipants\": 10,
+    \"minLevel\": 1,
+    \"maxLevel\": 5,
+    \"description\": \"Приглашаю всех желающих\"
+  }")
 
-echo "$MATCH_CREATE_RESPONSE" | jq .
-MATCH_ID=$(echo "$MATCH_CREATE_RESPONSE" | jq -r '.id // empty')
+MATCH_ID=$(echo "$MATCH_RESPONSE" | jq -r '.id // empty')
 
 if [ -n "$MATCH_ID" ] && [ "$MATCH_ID" != "null" ]; then
     echo_success "Матч создан (ID: $MATCH_ID)"
+    echo "  Title: $(echo "$MATCH_RESPONSE" | jq -r '.title')"
+    echo "  Sport: $(echo "$MATCH_RESPONSE" | jq -r '.sport')"
+    echo "  Sports Place ID: $(echo "$MATCH_RESPONSE" | jq -r '.sportsPlaceId')"
 else
     echo_error "Ошибка создания матча"
+    MATCH_ID=""
 fi
 
-# 8. Получение списка матчей
-echo_info "\n8. Получение списка матчей..."
+# 7. Получение списка матчей
+echo_info "\n7. Получение списка матчей..."
 MATCHES_RESPONSE=$(curl -s "$BASE_URL/api/v1/matches" \
   -H "Authorization: Bearer $TOKEN")
 
 MATCHES_COUNT=$(echo "$MATCHES_RESPONSE" | jq 'length')
 echo "Всего матчей: $MATCHES_COUNT"
-echo "$MATCHES_RESPONSE" | jq '.'
 
 if [ "$MATCHES_COUNT" -gt 0 ]; then
     echo_success "Матчи получены"
+    echo "  Матчи:"
+    echo "$MATCHES_RESPONSE" | jq '.[] | "    - \(.title) (\(.sport))"'
 else
     echo_error "Матчи не найдены"
 fi
@@ -173,6 +187,11 @@ echo "Токен: $TOKEN"
 echo "Матч ID: ${MATCH_ID:-не создан}"
 echo ""
 echo "Полезные команды:"
-echo "  - Площадки: curl $BASE_URL/api/v1/sports-places -H 'Authorization: Bearer \$TOKEN'"
-echo "  - Матчи:    curl $BASE_URL/api/v1/matches -H 'Authorization: Bearer \$TOKEN'"
-echo "  - Профиль:  curl $BASE_URL/api/v1/profiles/my -H 'Authorization: Bearer \$TOKEN'"
+echo "  # Получить площадки:"
+echo "  curl $BASE_URL/api/v1/sports-places -H 'Authorization: Bearer \$TOKEN'"
+echo ""
+echo "  # Получить матчи:"
+echo "  curl $BASE_URL/api/v1/matches -H 'Authorization: Bearer \$TOKEN'"
+echo ""
+echo "  # Получить профиль:"
+echo "  curl $BASE_URL/api/v1/profiles/my -H 'Authorization: Bearer \$TOKEN'"

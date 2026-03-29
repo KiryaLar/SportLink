@@ -137,9 +137,7 @@ Authorization: Bearer <token>
   "title": "Футбол 5x5",
   "sport": "FOOTBALL",
   "scheduledAt": "2024-01-15T18:00:00Z",
-  "locationName": "Парк Горького",
-  "latitude": 55.7297,
-  "longitude": 37.6015,
+  "sportsPlaceId": 1,
   "maxParticipants": 10,
   "currentParticipants": 5,
   "status": "OPEN"
@@ -237,6 +235,7 @@ Authorization: Bearer <token>
 - sportlink_places
 - sportlink_messages
 - sportlink_notifications
+- keycloak
 
 ### Keycloak
 1. Создать realm `sportlink`
