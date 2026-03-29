@@ -8,6 +8,7 @@ pluginManagement {
     }
 }
 
+
 include(
     "services:profile-service",
     "services:matches-service",
