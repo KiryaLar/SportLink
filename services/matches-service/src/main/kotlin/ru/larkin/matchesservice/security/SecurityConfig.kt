@@ -18,15 +18,12 @@ class SecurityConfig {
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         return http
             .csrf { it.disable() }
-            .cors { }
+            .cors { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
-                    // Actuator и документация
                     .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                    // Preflight requests
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    // Все API требуют аутентификации
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->

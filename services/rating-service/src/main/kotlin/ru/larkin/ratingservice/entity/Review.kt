@@ -27,6 +27,7 @@ class Review(
     var rating: Int,
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     var skillLevel: SkillLevel? = null,
 
     var comment: String? = null,
