@@ -1,0 +1,94 @@
+name: Service CI (reusable)
+
+# Reusable workflow called by each per-service CI file.
+# Handles: checkout → Gradle build → tests → Docker dry-run
+# Callers pass their service name and which infra they need.
+
+on:
+  workflow_call:
+    inputs:
+      service-name:
+        description: "Gradle sub-project name, e.g. profile-service"
+        required: true
+        type: string
+      needs-postgres:
+        description: "Spin up a Postgres service container for tests"
+        required: false
+        type: boolean
+        default: false
+      needs-kafka:
+        description: "Spin up a Kafka service container for tests"
+        required: false
+        type: boolean
+        default: false
+      test-db-name:
+        description: "Name of the test database to create (only used when needs-postgres=true)"
+        required: false
+        type: string
+        default: "testdb"
+
+jobs:
+  build-and-test:
+    name: Build & Test ${{ inputs.service-name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # ---------- optional service containers ----------
+    services:
+      postgres:
+        # Conditional service containers are not natively supported by GitHub Actions,
+        # so postgres is always started but health-checked; services that don't need
+        # it simply never connect to it.  Overhead is ~2s.
+        image: ${{ inputs.needs-postgres && 'postgres:17' || '' }}
+        env:
+          POSTGRES_USER: sportlink
+          POSTGRES_PASSWORD: sportlink
+          POSTGRES_DB: ${{ inputs.test-db-name }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # gradle/actions/setup-gradle handles:
+      #   - JVM toolchain download (respects java-version from build files)
+      #   - Gradle home caching (dependencies, wrapper)
+      #   - gradlew chmod +x
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      - name: Build (skip tests)
+        run: ./gradlew :services:${{ inputs.service-name }}:build -x test --no-daemon
+        timeout-minutes: 15
+
+      - name: Test
+        run: ./gradlew :services:${{ inputs.service-name }}:test --no-daemon
+        timeout-minutes: 10
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.service-name }}-test-results
+          path: services/${{ inputs.service-name }}/build/test-results/
+          retention-days: 7
+
+      # Validates the Dockerfile builds correctly; image is NOT pushed here.
+      # Pushing only happens in ci-cd.yml on merges to main.
+      - name: Docker dry-run (build only)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/${{ inputs.service-name }}/Dockerfile
+          push: false
+          tags: ${{ inputs.service-name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

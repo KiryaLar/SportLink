@@ -11,7 +11,7 @@ COPY common/ common/
 
 COPY services/sports-places-service/build.gradle.kts services/sports-places-service/
 
-RUN gradle :services:sports-places-service:dependencies --no-daemon || true
+RUN gradle :services:sports-places-service:dependencies --no-daemon
 
 COPY services/sports-places-service/src services/sports-places-service/src
 
@@ -24,9 +24,7 @@ WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=builder /app/services/sports-places-service/build/libs/*.jar app.jar
-
-RUN chown -R appuser:appgroup /app
+COPY --chown=appuser:appgroup --from=builder /app/services/profile-service/build/libs/*.jar app.jar
 
 USER appuser
 

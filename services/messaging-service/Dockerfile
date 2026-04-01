@@ -11,7 +11,7 @@ COPY common/ common/
 
 COPY services/messaging-service/build.gradle.kts services/messaging-service/
 
-RUN gradle :services:messaging-service:dependencies --no-daemon || true
+RUN gradle :services:messaging-service:dependencies --no-daemon
 
 COPY services/messaging-service/src services/messaging-service/src
 
@@ -24,9 +24,7 @@ WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=builder /app/services/messaging-service/build/libs/*.jar app.jar
-
-RUN chown -R appuser:appgroup /app
+COPY --chown=appuser:appgroup --from=builder /app/services/profile-service/build/libs/*.jar app.jar
 
 USER appuser
 

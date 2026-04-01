@@ -4,66 +4,19 @@ on:
   push:
     paths:
       - 'services/profile-service/**'
-      - 'common/**'
       - 'build-logic/**'
+      - 'common/**'
   pull_request:
     paths:
       - 'services/profile-service/**'
+      - 'build-logic/**'
       - 'common/**'
 
 jobs:
-  build:
-    name: Build & Test Profile Service
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: sportlink
-          POSTGRES_PASSWORD: sportlink
-          POSTGRES_DB: profiles_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: gradle
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build Profile Service
-        run: ./gradlew :services:profile-service:build -x test --no-daemon
-
-      - name: Run Profile Service tests
-        run: ./gradlew :services:profile-service:test --no-daemon
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: profile-service-test-results
-          path: 'services/profile-service/build/test-results/'
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/profile-service/Dockerfile
-          push: false
-          tags: profile-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+  ci:
+    uses: ./.github/workflows/_service-ci.yml
+    with:
+      service-name: profile-service
+      needs-postgres: true
+      needs-kafka: false
+      test-db-name: profiles_test

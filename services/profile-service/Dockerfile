@@ -14,7 +14,7 @@ COPY common/ common/
 COPY services/profile-service/build.gradle.kts services/profile-service/
 
 # Загружаем зависимости (кэшируется)
-RUN gradle :services:profile-service:dependencies --no-daemon || true
+RUN gradle :services:profile-service:dependencies --no-daemon
 
 # Копируем исходный код сервиса
 COPY services/profile-service/src services/profile-service/src
@@ -29,9 +29,7 @@ WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=builder /app/services/profile-service/build/libs/*.jar app.jar
-
-RUN chown -R appuser:appgroup /app
+COPY --chown=appuser:appgroup --from=builder /app/services/profile-service/build/libs/*.jar app.jar
 
 USER appuser
 

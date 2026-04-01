@@ -1,4 +1,4 @@
-build/
+services/profile-service/build/
 .gradle/
 .idea/
 *.iml

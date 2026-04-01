@@ -1,5 +1,9 @@
 name: CI/CD Pipeline
 
+# Runs on every push/PR to main or develop.
+# Per-service CIs (gateway-service-ci.yml etc.) handle isolated service changes.
+# This pipeline covers: full build+test → quality gate → Docker push → deploy.
+
 on:
   push:
     branches: [ main, develop ]
@@ -11,13 +15,17 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # ===========================================
-  # Build & Test
-  # ===========================================
+  # ─────────────────────────────────────────────
+  # 1. BUILD & TEST
+  #    Compiles everything and runs all tests.
+  #    Postgres + Kafka service containers are
+  #    available on localhost for integration tests.
+  # ─────────────────────────────────────────────
   build-and-test:
-    name: Build & Test
+    name: Build & Test (all services)
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+
     services:
       postgres:
         image: postgres:17
@@ -32,15 +40,18 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       kafka:
         image: apache/kafka:3.9.0
         ports:
           - 9092:9092
+          - 9093:9093
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller
-          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          # Use 127.0.0.1 instead of localhost — avoids IPv6/hostname resolution
+          # issues inside GitHub Actions service containers.
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@127.0.0.1:9093
           KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
           KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
           KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
@@ -49,31 +60,31 @@ jobs:
           KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
           KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
           KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+        options: >-
+          --health-cmd "kafka-topics.sh --bootstrap-server localhost:9092 --list"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: gradle
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
+      # gradle/actions/setup-gradle handles JVM toolchain, Gradle home caching,
+      # and makes gradlew executable — no need for setup-java separately.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
 
-      - name: Build with Gradle
+      - name: Build (skip tests)
         run: ./gradlew build -x test --no-daemon
+        timeout-minutes: 15
 
-      - name: Run tests
+      - name: Run all tests
         run: ./gradlew test --no-daemon
+        timeout-minutes: 20
 
       - name: Upload test results
         if: always()
@@ -81,107 +92,117 @@ jobs:
         with:
           name: test-results
           path: '**/build/test-results/'
+          retention-days: 7
 
-  # ===========================================
-  # Code Quality
-  # ===========================================
+  # ─────────────────────────────────────────────
+  # 2. CODE QUALITY
+  #    Runs in parallel with build-and-test.
+  #    Remove the `continue-on-error` lines once
+  #    ktlint/detekt are configured in build.gradle.kts.
+  # ─────────────────────────────────────────────
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    timeout-minutes: 15
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: gradle
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
 
-      - name: Run Ktlint
-        run: ./gradlew ktlintCheck --no-daemon || true
+      - name: Ktlint
+        run: ./gradlew ktlintCheck --no-daemon
+        continue-on-error: true  # TODO: remove after configuration
 
-      - name: Run Detekt
-        run: ./gradlew detekt --no-daemon || true
+      - name: Detekt
+        run: ./gradlew detekt --no-daemon
+        continue-on-error: true  # TODO: remove after configuration
 
-  # ===========================================
-  # Build Docker Images
-  # ===========================================
+  # ─────────────────────────────────────────────
+  # 3. BUILD & PUSH DOCKER IMAGES
+  #    Runs only on pushes to main (not on PRs).
+  #    Waits for build-and-test to pass.
+  #    Runs 7 image builds in parallel via matrix.
+  #    Images are pushed to GitHub Container Registry.
+  # ─────────────────────────────────────────────
   build-docker:
-    name: Build Docker Images
+    name: Docker – ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [build-and-test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     permissions:
       contents: read
       packages: write
 
     strategy:
+      fail-fast: false   # one failing service doesn't cancel the others
       matrix:
         service:
-          - name: gateway-service
-            port: 8080
-          - name: profile-service
-            port: 8081
-          - name: matches-service
-            port: 8082
-          - name: rating-service
-            port: 8083
-          - name: sports-places-service
-            port: 8084
-          - name: messaging-service
-            port: 8085
-          - name: notification-service
-            port: 8086
+          - gateway-service
+          - profile-service
+          - matches-service
+          - rating-service
+          - sports-places-service
+          - messaging-service
+          - notification-service
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
+      # Produces tags:
+      #   ghcr.io/<owner>/<repo>/<service>:<short-sha>   (always)
+      #   ghcr.io/<owner>/<repo>/<service>:main          (on branch push)
+      #   ghcr.io/<owner>/<repo>/<service>:<semver>      (on git tag push)
+      - name: Extract image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service.name }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
           tags: |
             type=sha,prefix=
             type=ref,event=branch
             type=semver,pattern={{version}}
 
-      - name: Build and push Docker image
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: services/${{ matrix.service.name }}/Dockerfile
+          file: services/${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           platforms: linux/amd64
 
-  # ===========================================
-  # Deploy to Staging
-  # ===========================================
+  # ─────────────────────────────────────────────
+  # 4. DEPLOY — STAGING
+  #    Runs after all Docker images are pushed.
+  #    Requires "staging" environment to be
+  #    configured in GitHub → Settings → Environments.
+  #    Add protection rules there for required reviewers.
+  # ─────────────────────────────────────────────
   deploy-staging:
-    name: Deploy to Staging
+    name: Deploy → Staging
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [build-docker]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
@@ -189,28 +210,39 @@ jobs:
       url: https://staging.sportlink.ru
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to staging
+      # Replace the block below with your actual deploy command, e.g.:
+      #   SSH + docker compose pull && docker compose up -d
+      #   kubectl set image deployment/...
+      #   Helm upgrade ...
+      - name: Deploy
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Deploying to staging environment..."
-          # Здесь будет команда для деплоя (kubectl, docker-compose, etc.)
-          # Пример для kubectl:
-          # kubectl apply -f k8s/staging/
-          # kubectl rollout restart deployment -l app=sportlink
+          echo "TODO: deploy image tag ${IMAGE_TAG} to staging"
+          # Example SSH deploy:
+          # ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_HOST }} \
+          #   "IMAGE_TAG=${IMAGE_TAG} docker compose -f /opt/sportlink/docker-compose.yml pull && \
+          #    docker compose -f /opt/sportlink/docker-compose.yml up -d"
 
       - name: Health check
         run: |
-          echo "Running health checks..."
-          # curl -f https://staging.sportlink.ru/actuator/health || exit 1
+          echo "TODO: uncomment after staging URL is live"
+          # curl --retry 5 --retry-delay 5 -f https://staging.sportlink.ru/actuator/health
 
-  # ===========================================
-  # Deploy to Production (manual approval)
-  # ===========================================
+  # ─────────────────────────────────────────────
+  # 5. DEPLOY — PRODUCTION
+  #    Runs after staging deploy succeeds.
+  #    Requires "production" environment configured
+  #    with required reviewers — GitHub will pause
+  #    here and wait for a human to approve.
+  # ─────────────────────────────────────────────
   deploy-production:
-    name: Deploy to Production
+    name: Deploy → Production
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [deploy-staging]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
@@ -218,21 +250,19 @@ jobs:
       url: https://sportlink.ru
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to production
+      - name: Deploy
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Deploying to production environment..."
-          # Здесь будет команда для деплоя
-          # Пример для docker-compose:
-          # docker-compose -f docker-compose.prod.yml up -d
+          echo "TODO: deploy image tag ${IMAGE_TAG} to production"
+          # ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_HOST }} \
+          #   "IMAGE_TAG=${IMAGE_TAG} docker compose -f /opt/sportlink/docker-compose.prod.yml pull && \
+          #    docker compose -f /opt/sportlink/docker-compose.prod.yml up -d"
 
       - name: Health check
         run: |
-          echo "Running production health checks..."
-          # curl -f https://sportlink.ru/actuator/health || exit 1
-
-      - name: Notify success
-        run: |
-          echo "✅ Deployment to production completed successfully!"
+          echo "TODO: uncomment after production URL is live"
+          # curl --retry 5 --retry-delay 5 -f https://sportlink.ru/actuator/health

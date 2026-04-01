@@ -11,7 +11,7 @@ COPY common/ common/
 
 COPY services/notification-service/build.gradle.kts services/notification-service/
 
-RUN gradle :services:notification-service:dependencies --no-daemon || true
+RUN gradle :services:notification-service:dependencies --no-daemon
 
 COPY services/notification-service/src services/notification-service/src
 
@@ -24,9 +24,7 @@ WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=builder /app/services/notification-service/build/libs/*.jar app.jar
-
-RUN chown -R appuser:appgroup /app
+COPY --chown=appuser:appgroup --from=builder /app/services/profile-service/build/libs/*.jar app.jar
 
 USER appuser
 

@@ -11,7 +11,7 @@ COPY common/ common/
 
 COPY services/rating-service/build.gradle.kts services/rating-service/
 
-RUN gradle :services:rating-service:dependencies --no-daemon || true
+RUN gradle :services:rating-service:dependencies --no-daemon
 
 COPY services/rating-service/src services/rating-service/src
 
@@ -24,9 +24,7 @@ WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=builder /app/services/rating-service/build/libs/*.jar app.jar
-
-RUN chown -R appuser:appgroup /app
+COPY --chown=appuser:appgroup --from=builder /app/services/profile-service/build/libs/*.jar app.jar
 
 USER appuser
 
