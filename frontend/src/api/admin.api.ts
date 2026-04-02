@@ -1,212 +1,105 @@
-import apiClient from './api.client';
+import apiClient from './client'
+import { Page, AdminStatistics } from '../types'
 
 export interface AdminUser {
-  id: string;
-  email: string;
-  name: string;
-  roles: string[];
-  status: 'ACTIVE' | 'BLOCKED' | 'BANNED';
-  createdAt: string;
+  id: string
+  email: string
+  name: string
+  roles: string[]
+  status: 'ACTIVE' | 'BLOCKED'
+  createdAt: string
 }
 
 export interface AdminMatch {
-  id: number;
-  title: string;
-  sport: string;
-  organizerId: string;
-  organizerName: string;
-  status: 'OPEN' | 'READY' | 'IN_PROGRESS' | 'FINISHED' | 'CANCELLED';
-  participantsCount: number;
-  scheduledAt: string;
+  id: string
+  title: string
+  sport: string
+  organizerId: string
+  status: string
+  currentParticipants: number
+  maxParticipants: number
+  scheduledAt: string
+  createdAt: string
 }
 
 export interface AdminPlace {
-  id: number;
-  name: string;
-  address: string;
-  status: 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED';
-  placeType: 'FREE' | 'PAID';
-  createdBy: string;
-  createdAt: string;
+  id: string
+  name: string
+  address: string
+  status: string
+  placeType: string
+  createdAt: string
 }
 
 export interface AdminComplaint {
-  id: number;
-  reporterId: string;
-  reporterName: string;
-  targetId: string;
-  targetName: string;
-  complaintType: 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE_CONTENT' | 'OTHER';
-  complaintText: string;
-  status: 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'REJECTED';
-  createdAt: string;
+  id: string
+  reporterProfileId: string
+  targetProfileId: string
+  complaintType: string
+  complaintText: string
+  status: string
+  createdAt: string
 }
 
-export const adminApi = {
-  // ==================== USERS ====================
-  /**
-   * Получить всех пользователей (ADMIN)
-   */
-  getAllUsers: async (page: number = 0, size: number = 50) => {
-    const response = await apiClient.get<{ content: AdminUser[]; total: number }>('/admin/users', {
-      params: { page, size },
-    });
-    return response.data;
-  },
+export async function getUsers(params?: { page?: number; size?: number }): Promise<Page<AdminUser>> {
+  const { data } = await apiClient.get<Page<AdminUser>>('/admin/users', { params })
+  return data
+}
 
-  /**
-   * Заблокировать пользователя
-   */
-  blockUser: async (userId: string) => {
-    const response = await apiClient.post(`/admin/users/${userId}/block`);
-    return response.data;
-  },
+export async function blockUser(id: string): Promise<void> {
+  await apiClient.post(`/admin/users/${id}/block`)
+}
 
-  /**
-   * Разблокировать пользователя
-   */
-  unblockUser: async (userId: string) => {
-    const response = await apiClient.post(`/admin/users/${userId}/unblock`);
-    return response.data;
-  },
+export async function unblockUser(id: string): Promise<void> {
+  await apiClient.post(`/admin/users/${id}/unblock`)
+}
 
-  /**
-   * Удалить пользователя
-   */
-  deleteUser: async (userId: string) => {
-    const response = await apiClient.delete(`/admin/users/${userId}`);
-    return response.data;
-  },
+export async function deleteUser(id: string): Promise<void> {
+  await apiClient.delete(`/admin/users/${id}`)
+}
 
-  /**
-   * Назначить роль ADMIN
-   */
-  assignAdminRole: async (userId: string) => {
-    const response = await apiClient.post(`/admin/users/${userId}/roles/admin`);
-    return response.data;
-  },
+export async function getAdminMatches(params?: { page?: number; size?: number }): Promise<Page<AdminMatch>> {
+  const { data } = await apiClient.get<Page<AdminMatch>>('/admin/matches', { params })
+  return data
+}
 
-  // ==================== MATCHES ====================
-  /**
-   * Получить все матчи (ADMIN)
-   */
-  getAllMatches: async (page: number = 0, size: number = 50) => {
-    const response = await apiClient.get<{ content: AdminMatch[]; total: number }>('/admin/matches', {
-      params: { page, size },
-    });
-    return response.data;
-  },
+export async function cancelMatch(id: string): Promise<void> {
+  await apiClient.post(`/admin/matches/${id}/cancel`)
+}
 
-  /**
-   * Отменить матч (принудительно)
-   */
-  cancelMatch: async (matchId: number) => {
-    const response = await apiClient.post(`/admin/matches/${matchId}/cancel`);
-    return response.data;
-  },
+export async function deleteAdminMatch(id: string): Promise<void> {
+  await apiClient.delete(`/admin/matches/${id}`)
+}
 
-  /**
-   * Удалить матч
-   */
-  deleteMatch: async (matchId: number) => {
-    const response = await apiClient.delete(`/admin/matches/${matchId}`);
-    return response.data;
-  },
+export async function getAdminPlaces(params?: { page?: number; size?: number }): Promise<Page<AdminPlace>> {
+  const { data } = await apiClient.get<Page<AdminPlace>>('/admin/places', { params })
+  return data
+}
 
-  // ==================== PLACES ====================
-  /**
-   * Получить все площадки (ADMIN)
-   */
-  getAllPlaces: async (page: number = 0, size: number = 50) => {
-    const response = await apiClient.get<{ content: AdminPlace[]; total: number }>('/admin/places', {
-      params: { page, size },
-    });
-    return response.data;
-  },
+export async function approvePlace(id: string): Promise<void> {
+  await apiClient.post(`/admin/places/${id}/approve`)
+}
 
-  /**
-   * Одобрить площадку
-   */
-  approvePlace: async (placeId: number) => {
-    const response = await apiClient.post(`/admin/places/${placeId}/approve`);
-    return response.data;
-  },
+export async function rejectPlace(id: string): Promise<void> {
+  await apiClient.post(`/admin/places/${id}/reject`)
+}
 
-  /**
-   * Отклонить площадку
-   */
-  rejectPlace: async (placeId: number) => {
-    const response = await apiClient.post(`/admin/places/${placeId}/reject`);
-    return response.data;
-  },
+export async function getComplaints(params?: { page?: number; size?: number }): Promise<Page<AdminComplaint>> {
+  const { data } = await apiClient.get<Page<AdminComplaint>>('/admin/complaints', { params })
+  return data
+}
 
-  /**
-   * Удалить площадку
-   */
-  deletePlace: async (placeId: number) => {
-    const response = await apiClient.delete(`/admin/places/${placeId}`);
-    return response.data;
-  },
+export async function resolveComplaint(id: string): Promise<void> {
+  await apiClient.post(`/admin/complaints/${id}/resolve`, null, {
+    params: { decision: 'RESOLVED' },
+  })
+}
 
-  // ==================== COMPLAINTS ====================
-  /**
-   * Получить ожидающие жалобы
-   */
-  getPendingComplaints: async (page: number = 0, size: number = 50) => {
-    const response = await apiClient.get<{ content: AdminComplaint[]; total: number }>('/admin/complaints/pending', {
-      params: { page, size },
-    });
-    return response.data;
-  },
+export async function rejectComplaint(id: string): Promise<void> {
+  await apiClient.post(`/admin/complaints/${id}/reject`)
+}
 
-  /**
-   * Получить все жалобы
-   */
-  getAllComplaints: async (page: number = 0, size: number = 50) => {
-    const response = await apiClient.get<{ content: AdminComplaint[]; total: number }>('/admin/complaints', {
-      params: { page, size },
-    });
-    return response.data;
-  },
-
-  /**
-   * Рассмотреть жалобу (принять)
-   */
-  resolveComplaint: async (complaintId: number, decision: 'ACCEPTED' | 'REJECTED') => {
-    const response = await apiClient.post(`/admin/complaints/${complaintId}/resolve`, { decision });
-    return response.data;
-  },
-
-  /**
-   * Отклонить жалобу
-   */
-  rejectComplaint: async (complaintId: number) => {
-    const response = await apiClient.post(`/admin/complaints/${complaintId}/reject`);
-    return response.data;
-  },
-
-  /**
-   * Удалить жалобу
-   */
-  deleteComplaint: async (complaintId: number) => {
-    const response = await apiClient.delete(`/admin/complaints/${complaintId}`);
-    return response.data;
-  },
-
-  // ==================== STATISTICS ====================
-  /**
-   * Получить общую статистику
-   */
-  getStatistics: async () => {
-    const response = await apiClient.get<{
-      totalUsers: number;
-      totalMatches: number;
-      totalPlaces: number;
-      pendingComplaints: number;
-      activeUsers: number;
-    }>('/admin/statistics');
-    return response.data;
-  },
-};
-
-export default adminApi;
+export async function getStatistics(): Promise<AdminStatistics> {
+  const { data } = await apiClient.get<AdminStatistics>('/admin/statistics')
+  return data
+}

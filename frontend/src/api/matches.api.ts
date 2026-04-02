@@ -1,108 +1,73 @@
-import apiClient from './api.client';
-import type { Match, MatchCreateRequest, MatchUpdateRequest, MatchParticipant, MatchSearchRequest } from '../types/matches.types';
+import apiClient from './client'
+import {
+  MatchResponse,
+  MatchSummaryResponse,
+  MatchCreateRequest,
+  MatchUpdateRequest,
+  MatchSearchRequest,
+  MatchStatus,
+  MatchParticipantResponse,
+} from '../types'
 
-export const matchesApi = {
-  /**
-   * Получить все матчи
-   */
-  getAllMatches: async (): Promise<Match[]> => {
-    const response = await apiClient.get<Match[]>('/matches');
-    return response.data;
-  },
+export async function getMatches(): Promise<MatchSummaryResponse[]> {
+  const { data } = await apiClient.get<MatchSummaryResponse[]>('/matches')
+  return data
+}
 
-  /**
-   * Получить матч по ID
-   */
-  getMatchById: async (id: number): Promise<Match> => {
-    const response = await apiClient.get<Match>(`/matches/${id}`);
-    return response.data;
-  },
+export async function searchMatches(req: MatchSearchRequest): Promise<MatchSummaryResponse[]> {
+  const { data } = await apiClient.post<MatchSummaryResponse[]>('/matches/search', req)
+  return data
+}
 
-  /**
-   * Поиск матчей
-   */
-  searchMatches: async (request: MatchSearchRequest): Promise<Match[]> => {
-    const response = await apiClient.post<Match[]>('/matches/search', request);
-    return response.data;
-  },
+export async function getMatch(id: string): Promise<MatchResponse> {
+  const { data } = await apiClient.get<MatchResponse>(`/matches/${id}`)
+  return data
+}
 
-  /**
-   * Получить мои организованные матчи
-   */
-  getMyOrganizedMatches: async (): Promise<Match[]> => {
-    const response = await apiClient.get<Match[]>('/matches/organizer/my');
-    return response.data;
-  },
+export async function getMyMatches(): Promise<MatchSummaryResponse[]> {
+  const { data } = await apiClient.get<MatchSummaryResponse[]>('/matches/organizer/my')
+  return data
+}
 
-  /**
-   * Создать матч
-   */
-  createMatch: async (data: MatchCreateRequest): Promise<Match> => {
-    const response = await apiClient.post<Match>('/matches', data);
-    return response.data;
-  },
+export async function createMatch(req: MatchCreateRequest): Promise<MatchResponse> {
+  const { data } = await apiClient.post<MatchResponse>('/matches', req)
+  return data
+}
 
-  /**
-   * Обновить матч
-   */
-  updateMatch: async (id: number, data: MatchUpdateRequest): Promise<Match> => {
-    const response = await apiClient.put<Match>(`/matches/${id}`, data);
-    return response.data;
-  },
+export async function updateMatch(id: string, req: MatchUpdateRequest): Promise<MatchResponse> {
+  const { data } = await apiClient.put<MatchResponse>(`/matches/${id}`, req)
+  return data
+}
 
-  /**
-   * Обновить статус матча
-   */
-  updateMatchStatus: async (id: number, status: string): Promise<Match> => {
-    const response = await apiClient.patch<Match>(`/matches/${id}/status`, null, {
-      params: { status },
-    });
-    return response.data;
-  },
+export async function updateMatchStatus(id: string, status: MatchStatus): Promise<MatchResponse> {
+  const { data } = await apiClient.patch<MatchResponse>(`/matches/${id}/status`, null, {
+    params: { status },
+  })
+  return data
+}
 
-  /**
-   * Удалить матч
-   */
-  deleteMatch: async (id: number): Promise<void> => {
-    await apiClient.delete(`/matches/${id}`);
-  },
+export async function deleteMatch(id: string): Promise<void> {
+  await apiClient.delete(`/matches/${id}`)
+}
 
-  /**
-   * Получить участников матча
-   */
-  getMatchParticipants: async (matchId: number): Promise<MatchParticipant[]> => {
-    const response = await apiClient.get<MatchParticipant[]>(`/matches/${matchId}/participants`);
-    return response.data;
-  },
+export async function getParticipants(id: string): Promise<MatchParticipantResponse[]> {
+  const { data } = await apiClient.get<MatchParticipantResponse[]>(`/matches/${id}/participants`)
+  return data
+}
 
-  /**
-   * Присоединиться к матчу
-   */
-  joinMatch: async (matchId: number): Promise<MatchParticipant> => {
-    const response = await apiClient.post<MatchParticipant>(`/matches/${matchId}/join`);
-    return response.data;
-  },
+export async function joinMatch(id: string): Promise<MatchParticipantResponse> {
+  const { data } = await apiClient.post<MatchParticipantResponse>(`/matches/${id}/join`)
+  return data
+}
 
-  /**
-   * Покинуть матч
-   */
-  leaveMatch: async (matchId: number): Promise<void> => {
-    await apiClient.post(`/matches/${matchId}/leave`);
-  },
+export async function leaveMatch(id: string): Promise<void> {
+  await apiClient.post(`/matches/${id}/leave`)
+}
 
-  /**
-   * Подтвердить участника
-   */
-  confirmParticipant: async (participantId: number): Promise<void> => {
-    await apiClient.post(`/matches/participants/${participantId}/confirm`);
-  },
+export async function confirmParticipant(matchId: string, participantId: string): Promise<void> {
+  await apiClient.post(`/matches/${matchId}/participants/${participantId}/confirm`)
+}
 
-  /**
-   * Удалить участника
-   */
-  removeParticipant: async (participantId: number): Promise<void> => {
-    await apiClient.delete(`/matches/participants/${participantId}`);
-  },
-};
-
-export default matchesApi;
+export async function removeParticipant(matchId: string, participantId: string): Promise<void> {
+  await apiClient.delete(`/matches/${matchId}/participants/${participantId}`)
+}

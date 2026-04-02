@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
@@ -16,6 +17,17 @@ export default defineConfig({
   build: {
     outDir: 'build',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          query: ['@tanstack/react-query'],
+          maps: ['leaflet', 'react-leaflet'],
+          ws: ['@stomp/stompjs', 'sockjs-client'],
+        },
+      },
+    },
   },
   test: {
     globals: true,

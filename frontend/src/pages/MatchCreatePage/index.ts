@@ -1,1 +1,1 @@
-export { MatchCreatePage } from './MatchCreatePage';
+export { default } from './MatchCreatePage'

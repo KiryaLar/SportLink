@@ -1,1 +1,1 @@
-export { PostMatchReviewForm } from './PostMatchReviewForm';
+export { default } from './PostMatchReviewForm'

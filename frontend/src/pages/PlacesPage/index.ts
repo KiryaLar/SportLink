@@ -1,1 +1,1 @@
-export { PlacesPage } from './PlacesPage';
+export { default } from './PlacesPage'

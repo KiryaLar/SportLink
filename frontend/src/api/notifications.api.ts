@@ -1,70 +1,35 @@
-import apiClient from './api.client';
-import type { Notification, NotificationCount } from '../types/notifications.types';
+import apiClient from './client'
+import { NotificationResponse, NotificationCount } from '../types'
 
-export const notificationsApi = {
-  /**
-   * Получить мои уведомления
-   */
-  getMyNotifications: async (page: number = 0, size: number = 50): Promise<{ content: Notification[]; total: number }> => {
-    const response = await apiClient.get<{ content: Notification[]; total: number }>('/notifications', {
-      params: { page, size },
-    });
-    return response.data;
-  },
+export async function getNotifications(params?: {
+  page?: number
+  size?: number
+}): Promise<NotificationResponse[]> {
+  const { data } = await apiClient.get<NotificationResponse[]>('/notifications', { params })
+  return data
+}
 
-  /**
-   * Получить непрочитанные уведомления
-   */
-  getUnreadNotifications: async (page: number = 0, size: number = 50): Promise<{ content: Notification[]; total: number }> => {
-    const response = await apiClient.get<{ content: Notification[]; total: number }>('/notifications/unread', {
-      params: { page, size },
-    });
-    return response.data;
-  },
+export async function getUnreadNotifications(params?: {
+  page?: number
+  size?: number
+}): Promise<NotificationResponse[]> {
+  const { data } = await apiClient.get<NotificationResponse[]>('/notifications/unread', { params })
+  return data
+}
 
-  /**
-   * Получить количество уведомлений
-   */
-  getNotificationsCount: async (): Promise<NotificationCount> => {
-    const response = await apiClient.get<NotificationCount>('/notifications/count');
-    return response.data;
-  },
+export async function getCount(): Promise<NotificationCount> {
+  const { data } = await apiClient.get<NotificationCount>('/notifications/count')
+  return data
+}
 
-  /**
-   * Получить уведомление по ID
-   */
-  getNotificationById: async (id: number): Promise<Notification> => {
-    const response = await apiClient.get<Notification>(`/notifications/${id}`);
-    return response.data;
-  },
+export async function markRead(id: string): Promise<void> {
+  await apiClient.post(`/notifications/${id}/read`)
+}
 
-  /**
-   * Отметить уведомление как прочитанное
-   */
-  markAsRead: async (id: number): Promise<void> => {
-    await apiClient.post(`/notifications/${id}/read`);
-  },
+export async function markAllRead(): Promise<void> {
+  await apiClient.post('/notifications/read-all')
+}
 
-  /**
-   * Отметить все уведомления как прочитанные
-   */
-  markAllAsRead: async (): Promise<void> => {
-    await apiClient.post('/notifications/read-all');
-  },
-
-  /**
-   * Удалить уведомление
-   */
-  deleteNotification: async (id: number): Promise<void> => {
-    await apiClient.delete(`/notifications/${id}`);
-  },
-
-  /**
-   * Удалить все уведомления
-   */
-  deleteAllNotifications: async (): Promise<void> => {
-    await apiClient.delete('/notifications');
-  },
-};
-
-export default notificationsApi;
+export async function deleteNotification(id: string): Promise<void> {
+  await apiClient.delete(`/notifications/${id}`)
+}

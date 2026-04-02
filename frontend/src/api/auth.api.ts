@@ -1,37 +1,23 @@
-import apiClient from './api.client';
-import type { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, Tokens } from '../types/auth.types';
+import apiClient from './client'
+import { LoginRequest, RegisterRequest } from '../types'
 
-export const authApi = {
-  /**
-   * Регистрация нового пользователя
-   */
-  register: async (data: RegisterRequest): Promise<RegisterResponse> => {
-    const response = await apiClient.post<RegisterResponse>('/auth/register', data);
-    return response.data;
-  },
+interface AuthResponse {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+}
 
-  /**
-   * Логин пользователя
-   */
-  login: async (data: LoginRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>('/auth/login', data);
-    return response.data;
-  },
+export async function login(req: LoginRequest): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>('/auth/login', req)
+  return data
+}
 
-  /**
-   * Обновление токена (refresh token)
-   */
-  refresh: async (data: { refreshToken: string }): Promise<Tokens> => {
-    const response = await apiClient.post<Tokens>('/auth/refresh', data);
-    return response.data;
-  },
+export async function register(req: RegisterRequest): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>('/auth/register', req)
+  return data
+}
 
-  /**
-   * Выход из системы (локальный)
-   */
-  logout: () => {
-    localStorage.removeItem('sportlink_tokens');
-  },
-};
-
-export default authApi;
+export async function refresh(refreshToken: string): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>('/auth/refresh', { refreshToken })
+  return data
+}
