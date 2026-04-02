@@ -34,6 +34,9 @@ jobs:
     timeout-minutes: 20
 
     # ---------- optional service containers ----------
+    # TODO: verify that image: '' (empty string) actually skips the container — GitHub
+    #       Actions does not officially document this behaviour; if it breaks, split
+    #       this template into two separate reusable workflows (with-db / without-db).
     services:
       postgres:
         # Conditional service containers are not natively supported by GitHub Actions,
@@ -83,6 +86,13 @@ jobs:
 
       # Validates the Dockerfile builds correctly; image is NOT pushed here.
       # Pushing only happens in ci-cd.yml on merges to main.
+      # TODO: add Kafka service container controlled by inputs.needs-kafka — currently
+      #       the needs-kafka input is declared but never used; matches-service,
+      #       messaging-service, and notification-service tests will fail if they
+      #       require a running broker.
+
+      # TODO: add linux/arm64 to platforms once self-hosted ARM runners are available
+      #       or QEMU emulation time is acceptable (currently ~3× slower).
       - name: Docker dry-run (build only)
         uses: docker/build-push-action@v5
         with:

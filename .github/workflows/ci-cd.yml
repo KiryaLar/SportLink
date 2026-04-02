@@ -3,6 +3,14 @@ name: CI/CD Pipeline
 # Runs on every push/PR to main or develop.
 # Per-service CIs (gateway-service-ci.yml etc.) handle isolated service changes.
 # This pipeline covers: full build+test → quality gate → Docker push → deploy.
+#
+# TODO: eliminate double compilation — currently build-and-test re-builds all services
+#       that were already built by the per-service CIs on the same commit. Fix by
+#       replacing the build-and-test job with individual calls to _service-ci.yml
+#       (one per service, using `uses:`) and adding them all to build-docker's `needs:`.
+#
+# TODO: add a frontend CI job — npm ci → npm run build → npm run test — so a broken
+#       frontend is caught before images are pushed.
 
 on:
   push:
@@ -27,6 +35,9 @@ jobs:
     timeout-minutes: 30
 
     services:
+      # TODO: replace single shared testdb with per-service databases (profiles_test,
+      #       matches_test, etc.) to prevent Flyway migrations from different services
+      #       conflicting when tests run concurrently on the same Postgres instance.
       postgres:
         image: postgres:17
         env:
@@ -191,6 +202,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           platforms: linux/amd64
+          # TODO: add linux/arm64 once ARM runner support is confirmed
 
   # ─────────────────────────────────────────────
   # 4. DEPLOY — STAGING
@@ -231,6 +243,9 @@ jobs:
         run: |
           echo "TODO: uncomment after staging URL is live"
           # curl --retry 5 --retry-delay 5 -f https://staging.sportlink.ru/actuator/health
+
+      # TODO: add failure notification (Slack / email) so broken deploys are reported
+      #       automatically — use `if: failure()` with actions/slack-send or similar.
 
   # ─────────────────────────────────────────────
   # 5. DEPLOY — PRODUCTION

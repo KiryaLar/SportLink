@@ -1,4 +1,7 @@
 name: Profile Service CI
+# TODO: once ci-cd.yml is refactored to call _service-ci.yml per service, this file
+#       becomes redundant for pushes to main — keep it only for PR fast-feedback
+#       and add a branch filter (branches-ignore: [main]) to avoid double runs.
 
 on:
   push:
