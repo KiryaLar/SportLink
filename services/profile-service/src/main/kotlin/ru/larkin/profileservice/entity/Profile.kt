@@ -39,22 +39,25 @@ class Profile(
 
     var description: String? = null
 
+    var complaintCount: Int = 0
+
+    var ratingAvg: Double = 0.0
+
+    var ratingCount: Long = 0L
+
+    var ratingVersion: Long = 0L
+
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "profile")
     var sports: MutableList<SportInfo> = mutableListOf()
 
     @OneToMany(cascade = [CascadeType.ALL])
     var outgoingContacts: MutableSet<Contact> = mutableSetOf()
 
-    var complaintCount: Int = 0
-
     @get:Transient
     val contactProfiles: List<Profile>
         get() = outgoingContacts
             .filter { it.status == ContactStatus.ACCEPTED }
             .map { it.contact }
-
-    @Embedded
-    var rating: PersonRating = PersonRating()
 
     @CreatedDate
     lateinit var createdAt: Instant

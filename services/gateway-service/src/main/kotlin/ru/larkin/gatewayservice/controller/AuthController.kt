@@ -8,25 +8,32 @@ import org.springframework.web.bind.annotation.RestController
 import ru.larkin.gatewayservice.service.KeycloakAdminService
 import jakarta.validation.Valid
 import ru.larkin.gatewayservice.dto.req.LoginRequest
+import ru.larkin.gatewayservice.dto.req.LogoutRequest
+import ru.larkin.gatewayservice.dto.req.RefreshRequest
 import ru.larkin.gatewayservice.dto.req.RegisterRequest
 import ru.larkin.gatewayservice.dto.resp.LoginResponse
-import ru.larkin.gatewayservice.dto.resp.RegisterResponse
 
 @RestController
-@RequestMapping("/api/v1/auth/")
+@RequestMapping("/api/v1/auth")
 class AuthController(
     private val keycloakAdminService: KeycloakAdminService
 ) {
 
     @PostMapping("/register")
-    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<RegisterResponse> {
-        val userId = keycloakAdminService.createUser(
+    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<LoginResponse> {
+        keycloakAdminService.createUser(
             email = request.email,
             password = request.password,
             name = request.name,
             phone = request.phone
         )
-        return ResponseEntity.ok(RegisterResponse(userId, message = "Пользователь успешно зарегистрирован. Профиль будет создан автоматически."))
+
+        val tokens = keycloakAdminService.login(request.email, request.password)
+        return ResponseEntity.ok(LoginResponse(
+            accessToken = tokens.accessToken,
+            refreshToken = tokens.refreshToken,
+            expiresIn = tokens.expiresIn
+        ))
     }
 
     @PostMapping("/login")
@@ -37,5 +44,21 @@ class AuthController(
             refreshToken = tokens.refreshToken,
             expiresIn = tokens.expiresIn
         ))
+    }
+
+    @PostMapping("/refresh")
+    fun refresh(@Valid @RequestBody request: RefreshRequest): ResponseEntity<LoginResponse> {
+        val tokens = keycloakAdminService.refreshToken(request.refreshToken)
+        return ResponseEntity.ok(LoginResponse(
+            accessToken = tokens.accessToken,
+            refreshToken = tokens.refreshToken,
+            expiresIn = tokens.expiresIn
+        ))
+    }
+
+    @PostMapping("/logout")
+    fun logout(@Valid @RequestBody request: LogoutRequest): ResponseEntity<Void> {
+        keycloakAdminService.revokeToken(request.refreshToken)
+        return ResponseEntity.noContent().build()
     }
 }

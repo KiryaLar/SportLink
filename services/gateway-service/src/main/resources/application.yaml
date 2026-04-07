@@ -132,6 +132,6 @@ springdoc:
 keycloak:
   admin-server-url: http://localhost:8443
   realm: sportlink
-  admin-username: ${KEYCLOAK_ADMIN:-admin}
-  admin-password: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+  client-id: gateway-service
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:SUPER_SECRET_KEY}
 

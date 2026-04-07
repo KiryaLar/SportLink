@@ -5,6 +5,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 import java.util.UUID
+import kotlin.math.roundToInt
 
 @Entity
 @Table(name = "user_ratings")
@@ -50,12 +51,12 @@ class UserRating(
 
     fun getOverallRating(): Double {
         val totalAvg = (skillRatingAvg + behaviorRatingAvg + reliabilityRatingAvg) / 3
-        return Math.round(totalAvg * 100.0) / 100.0
+        return (totalAvg * 100.0).roundToInt() / 100.0
     }
 
     fun getSkillLevelMatchPercentage(): Double {
         val total = skillLevelMatches + skillLevelBelow + skillLevelAbove
         if (total == 0L) return 100.0
-        return Math.round((skillLevelMatches.toDouble() / total) * 10000.0) / 100.0
+        return ((skillLevelMatches.toDouble() / total) * 10000.0).roundToInt() / 100.0
     }
 }

@@ -20,6 +20,7 @@ class RatingService(
     private val userRatingRepository: UserRatingRepository
 ) {
 
+    //TODO: один Transactional вызывает другой
     @Transactional
     fun createReview(authorId: UUID, request: ReviewCreateRequest): ReviewResponse {
         val targetUserId = UUID.fromString(request.targetUserId)
@@ -39,7 +40,7 @@ class RatingService(
             throw RatingServiceException("Рейтинг должен быть от 1 до 5")
         }
 
-        val review = Review(
+        val technicalReview = TechnicalReview(
             authorId = authorId,
             targetUserId = targetUserId,
             matchId = request.matchId,
@@ -49,7 +50,7 @@ class RatingService(
             comment = request.comment
         )
 
-        val savedReview = reviewRepository.save(review)
+        val savedReview = reviewRepository.save(technicalReview)
 
         // Обновляем агрегированный рейтинг пользователя
         updateUserRating(targetUserId)
@@ -117,6 +118,7 @@ class RatingService(
         userRating.skillLevelMatches = reviews.count { it.skillLevel == SkillLevel.AS_EXPECTED }.toLong()
         userRating.skillLevelBelow = reviews.count { it.skillLevel == SkillLevel.BELOW_EXPECTED }.toLong()
         userRating.skillLevelAbove = reviews.count { it.skillLevel == SkillLevel.ABOVE_EXPECTED }.toLong()
+//        TODO: так как вызывается из другого Transactional, то может не сохраняться
     }
 
     @Transactional
@@ -131,13 +133,13 @@ class RatingService(
         updateUserRating(targetUserId)
     }
 
-    private fun calculateAverage(reviews: List<Review>): Double {
+    private fun calculateAverage(reviews: List<TechnicalReview>): Double {
         if (reviews.isEmpty()) return 0.0
         return reviews.map { it.rating }.average()
     }
 }
 
-private fun Review.toReviewResponse(): ReviewResponse {
+private fun TechnicalReview.toReviewResponse(): ReviewResponse {
     return ReviewResponse(
         id = id!!,
         authorId = authorId.toString(),

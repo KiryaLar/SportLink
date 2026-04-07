@@ -45,3 +45,8 @@ management:
   endpoint:
     health:
       show-details: always
+
+seed:
+  data:
+    enabled: "true"
+

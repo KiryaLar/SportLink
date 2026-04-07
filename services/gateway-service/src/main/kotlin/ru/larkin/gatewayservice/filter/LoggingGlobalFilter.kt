@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import reactor.core.publisher.SignalType
 
 @Component
 class LoggingGlobalFilter : GlobalFilter, Ordered {
@@ -25,12 +26,14 @@ class LoggingGlobalFilter : GlobalFilter, Ordered {
             filterSensitiveHeaders(request.headers)
         )
 
-        return chain.filter(exchange).doOnSuccess {
+        return chain.filter(exchange).doFinally { signalType: SignalType ->
+            val response = exchange.response
             log.info(
-                "Response status: {} for {} {}",
-                response.statusCode,
+                "Outgoing response: {} {} \\| status={} \\| signal={}",
                 request.method,
-                request.path
+                request.uri.path,
+                response.statusCode,
+                signalType
             )
         }
     }
