@@ -24,7 +24,7 @@ WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --chown=appuser:appgroup --from=builder /app/services/profile-service/build/libs/*.jar app.jar
+COPY --chown=appuser:appgroup --from=builder /app/services/sports-places-service/build/libs/*.jar app.jar
 
 USER appuser
 

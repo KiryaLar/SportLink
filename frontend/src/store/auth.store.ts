@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { ProfileResponse, AuthTokens } from '../types'
-import { login as loginApi, register as registerApi } from '../api/auth.api'
+import { login as loginApi, register as registerApi, logout as logoutApi } from '../api/auth.api'
 import { getMyProfile } from '../api/profiles.api'
 import { getTokens, setTokens, clearTokens } from '../api/client'
 
@@ -88,6 +88,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
+    const tokens = get().tokens
+    if (tokens?.refreshToken) {
+      logoutApi(tokens.refreshToken).catch(() => {})
+    }
     clearTokens()
     set({ user: null, tokens: null, isAuthenticated: false, isAdmin: false })
   },

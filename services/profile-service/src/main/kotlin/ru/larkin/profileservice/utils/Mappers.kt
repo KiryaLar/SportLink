@@ -31,8 +31,8 @@ fun Profile.toProfileResponse(avatarUrlBuilder: AvatarUrlBuilder) = ProfileRespo
             description = sport.description
         )
     },
-    ratingAvg = rating.avg,
-    ratingCount = rating.count
+    ratingAvg = ratingAvg,
+    ratingCount = ratingCount
     )
 
 //fun interface Mapper<in From, out To> {

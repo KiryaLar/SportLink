@@ -113,10 +113,11 @@ services:
       - MESSAGING_SERVICE_URL=http://messaging-service:8085
       - NOTIFICATION_SERVICE_URL=http://notification-service:8086
       - FRONT_URL=${FRONT_URL:-http://localhost:3000}
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
       - KEYCLOAK_ADMIN_SERVER_URL=http://keycloak:8080
       - KEYCLOAK_REALM=sportlink
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:-SUPER_SECRET_KEY}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/sportlink
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/sportlink/protocol/openid-connect/certs
     depends_on:
       postgres:
         condition: service_healthy

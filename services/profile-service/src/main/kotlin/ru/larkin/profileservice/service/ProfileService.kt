@@ -7,7 +7,6 @@ import ru.larkin.profileservice.dto.req.ProfileCreateRequest
 import ru.larkin.profileservice.dto.req.ProfileUpdateRequest
 import ru.larkin.profileservice.dto.resp.ProfileResponse
 import ru.larkin.profileservice.dto.resp.ProfileSummaryResponse
-import ru.larkin.profileservice.entity.PersonRating
 import ru.larkin.profileservice.entity.Profile
 import ru.larkin.profileservice.entity.ProfileStatus
 import ru.larkin.profileservice.entity.SportInfo
@@ -88,8 +87,6 @@ class ProfileService(
                 description = sportReq.description
             )
         }.toMutableList()
-        profile.rating = PersonRating()
-
         val savedProfile = profileRepository.save(profile)
         return savedProfile.toProfileResponse(imageStorageService::buildPublicUrlByKey)
     }
@@ -123,11 +120,10 @@ class ProfileService(
         val profile = profileRepository.findById(profileId)
             .orElseThrow { NotFoundException.profileNotFound(profileId) }
 
-        val currentRating = profile.rating
-        val totalRating = currentRating.avg * currentRating.count + newRating
-        currentRating.count++
-        currentRating.avg = totalRating / currentRating.count
-        currentRating.version++
+        val totalRating = profile.ratingAvg * profile.ratingCount + newRating
+        profile.ratingCount++
+        profile.ratingAvg = totalRating / profile.ratingCount
+        profile.ratingVersion++
 
         profileRepository.save(profile)
     }
@@ -148,7 +144,6 @@ class ProfileService(
         profile.name = name
         profile.status = ProfileStatus.ACTIVE
         profile.sports = mutableListOf()
-        profile.rating = PersonRating()
 
         return profileRepository.save(profile)
     }
